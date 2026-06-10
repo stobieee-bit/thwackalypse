@@ -226,9 +226,9 @@
     <button class="btn alt" id="bSettings">SETTINGS</button>
   </div>
   <div class="stats-line" id="menuStats"></div>
-  <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; weapons fire themselves &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
+  <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.0 · all art, audio, characters &amp; code original · rendered with three.js r158 (MIT) · max one weapon evolution per passive, collect chests to ascend</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.1 · now with full 360° camera · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -264,6 +264,7 @@
   <div class="setrow"><span class="sl">📳 Screen shake</span><button class="btn mini" id="sShake"></button></div>
   <div class="setrow"><span class="sl">📺 CRT filter</span><button class="btn mini" id="sCrt"></button></div>
   <div class="setrow"><span class="sl">🔢 Damage numbers</span><button class="btn mini" id="sDmg"></button></div>
+  <div class="setrow"><span class="sl">🎥 Camera speed</span><input type="range" id="sSens" min="40" max="200"><span class="sv" id="sSensV"></span></div>
   <button class="btn alt" id="bBack3" style="margin-top:14px">BACK</button>
 </div>
 
@@ -308,7 +309,7 @@ const $=id=>document.getElementById(id);
 
 /* ============================== SAVE ============================== */
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0},ach:{},lastMap:'lawn',
-  settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1},
+  settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
 try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
@@ -433,8 +434,44 @@ addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 addEventListener('pointerdown',()=>{AU.init();if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();});
 addEventListener('blur',()=>{if(G.state==='play')togglePause();});
 
-/* ---- touch: floating joystick + dash button ---- */
+/* ---- 360° chase camera ---- */
+const CAM={yaw:0,pitch:.62,dist:300,relock:false};
+const sens=()=>SAVE.settings.sens||1;
+function bindCamera(){
+  const cvEl=document.getElementById('cv');
+  let dragging=false;
+  cvEl.addEventListener('mousedown',()=>{
+    if(G.state==='play'){
+      if(document.pointerLockElement!==cvEl&&cvEl.requestPointerLock)cvEl.requestPointerLock();
+      dragging=true;}
+  });
+  addEventListener('mouseup',()=>dragging=false);
+  addEventListener('mousemove',e=>{
+    if(G.state!=='play')return;
+    if(document.pointerLockElement===cvEl){
+      CAM.yaw-=e.movementX*.0026*sens();
+      CAM.pitch=clamp(CAM.pitch+e.movementY*.0022*sens(),.12,1.15);
+    }else if(dragging){
+      CAM.yaw-=e.movementX*.0048*sens();
+      CAM.pitch=clamp(CAM.pitch+e.movementY*.004*sens(),.12,1.15);
+    }
+  });
+  cvEl.addEventListener('wheel',e=>{
+    if(G.state==='play'){e.preventDefault();CAM.dist=clamp(CAM.dist+e.deltaY*.3,180,430);}
+  },{passive:false});
+  document.addEventListener('pointerlockchange',()=>{
+    if(document.pointerLockElement===cvEl)CAM.relock=true;
+    else if(G.state==='play')CAM.relock=false; // user chose to release
+  });
+}
+function relock(){ // called from card-click handlers (a valid user gesture)
+  const cvEl=document.getElementById('cv');
+  if(CAM.relock&&G.state==='play'&&cvEl.requestPointerLock&&!document.body.classList.contains('touch'))
+    try{cvEl.requestPointerLock();}catch(e){}
+}
+/* ---- touch: left thumb = joystick, right thumb = camera, dash button ---- */
 const TOUCH={id:null,x:0,y:0,ox:0,oy:0,dash:false};
+const CAMT={id:null,lx:0,ly:0};
 const JOY_R=54;
 function joyShow(x,y){const j=$('joy');j.style.display='block';j.style.left=x+'px';j.style.top=y+'px';
   $('joyDot').style.left='0px';$('joyDot').style.top='0px';}
@@ -446,8 +483,12 @@ function bindTouch(){
     AU.init();if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
     if(G.state!=='play')return;
     for(const t of e.changedTouches){
-      if(TOUCH.id===null){TOUCH.id=t.identifier;TOUCH.ox=t.clientX;TOUCH.oy=t.clientY;
-        TOUCH.x=0;TOUCH.y=0;joyShow(t.clientX,t.clientY);}
+      if(t.clientX<innerWidth*.5&&TOUCH.id===null){ // left half: move
+        TOUCH.id=t.identifier;TOUCH.ox=t.clientX;TOUCH.oy=t.clientY;
+        TOUCH.x=0;TOUCH.y=0;joyShow(t.clientX,t.clientY);
+      }else if(CAMT.id===null&&t.identifier!==TOUCH.id){ // right half: look
+        CAMT.id=t.identifier;CAMT.lx=t.clientX;CAMT.ly=t.clientY;
+      }
     }
   },{passive:false});
   cvEl.addEventListener('touchmove',e=>{
@@ -459,10 +500,16 @@ function bindTouch(){
         if(L>JOY_R){dx=dx/L*JOY_R;dy=dy/L*JOY_R;}
         TOUCH.x=dx/JOY_R;TOUCH.y=dy/JOY_R;
         $('joyDot').style.left=dx+'px';$('joyDot').style.top=dy+'px';
+      }else if(t.identifier===CAMT.id){
+        CAM.yaw-=(t.clientX-CAMT.lx)*.0062*sens();
+        CAM.pitch=clamp(CAM.pitch+(t.clientY-CAMT.ly)*.005*sens(),.12,1.15);
+        CAMT.lx=t.clientX;CAMT.ly=t.clientY;
       }
     }
   },{passive:false});
-  const end=e=>{for(const t of e.changedTouches)if(t.identifier===TOUCH.id)joyHide();};
+  const end=e=>{for(const t of e.changedTouches){
+    if(t.identifier===TOUCH.id)joyHide();
+    if(t.identifier===CAMT.id)CAMT.id=null;}};
   cvEl.addEventListener('touchend',end);cvEl.addEventListener('touchcancel',end);
   const bd=$('btnDash');
   bd.addEventListener('touchstart',e=>{e.preventDefault();TOUCH.dash=true;},{passive:false});
@@ -470,7 +517,7 @@ function bindTouch(){
   bd.addEventListener('touchcancel',()=>TOUCH.dash=false);
   $('btnPause2').addEventListener('click',()=>{if(G.state==='play'||G.state==='pause')togglePause();});
 }
-bindTouch();
+bindTouch();bindCamera();
 if(matchMedia&&matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
 
 /* ============================== DATA ============================== */
@@ -630,14 +677,14 @@ const SHOPCOST=[60,140,260,420,650];
 const SPAWN_R=720;
 const MAPS=[
   {id:'lawn',name:'FRONT LAWN',icon:'🏡',desc:'Where it all began.',unlock:null,
-   sky:0x8fc4dd,fogN:520,fogF:1500,hemi:[0xeaf6ff,0x3f6e2a,1.15],sun:[0xfff2d8,2.0],
+   sky:0x8fc4dd,skyTop:0x4e9ad8,cloud:0xffffff,fogN:520,fogF:1500,hemi:[0xeaf6ff,0x3f6e2a,1.15],sun:[0xfff2d8,2.0],
    g1:'#4a8a33',g2:'#428031',tuft:'#3f7d2a',leaf1:'#2e6b22',leaf2:'#357a28',mods:{}},
   {id:'night',name:'MIDNIGHT MOW',icon:'🌙',desc:'+25% gold · enemies 6% faster · fireflies',unlock:'boss1',
-   sky:0x131a30,fogN:430,fogF:1280,hemi:[0x96acdf,0x16241c,.8],sun:[0xaac4ff,1.0],
+   sky:0x131a30,skyTop:0x04060e,cloud:0x222b46,fogN:430,fogF:1280,hemi:[0x96acdf,0x16241c,.8],sun:[0xaac4ff,1.0],
    g1:'#23402a',g2:'#1d3823',tuft:'#2b4f30',leaf1:'#1d4a18',leaf2:'#24561e',
    mods:{gold:1.25,espd:1.06},fireflies:true},
   {id:'golf',name:'GNOME-IN-ONE',icon:'⛳',desc:'+15% XP · enemies +12% HP · mind the bunkers',unlock:'sweep',
-   sky:0xa8dcec,fogN:560,fogF:1550,hemi:[0xf2fbff,0x4a7d33,1.25],sun:[0xfff6e0,2.2],
+   sky:0xa8dcec,skyTop:0x59b8e0,cloud:0xffffff,fogN:560,fogF:1550,hemi:[0xf2fbff,0x4a7d33,1.25],sun:[0xfff6e0,2.2],
    g1:'#58a13c',g2:'#4f9636',tuft:'#4a8a33',leaf1:'#357a28',leaf2:'#3f8a2e',
    mods:{xp:1.15,ehp:1.12},golf:true},
 ];
@@ -668,7 +715,9 @@ function newRun(charId){
     spawnEnemy('gnome',Math.cos(a)*rand(260,340),Math.sin(a)*rand(260,340));}
   show('hud');hideAll(['scrMenu','scrSelect','scrShop','scrDead','scrWin','scrLevel','scrChest','scrPause']);
   G.state='play';updateWrow();
-  banner('DEFEND THE LAWN!','they\'re coming for the grass');
+  CAM.yaw=0;CAM.pitch=.62;CAM.dist=300;
+  banner('DEFEND THE LAWN!',document.body.classList.contains('touch')?
+    'left thumb moves · right thumb looks':'WASD moves · mouse looks · wheel zooms');
 }
 function recompute(){
   const c=P.char,u=SAVE.upg,ps=P.passives;
@@ -841,7 +890,7 @@ function applyChoice(p){
 function closeLevelUp(){
   hideAll(['scrLevel']);P.pend--;
   if(P.pend>0)openLevelUp();
-  else G.state='play';
+  else {G.state='play';relock();}
 }
 function evoReady(){
   return P.weapons.find(w=>!w.evo&&w.lvl>=5&&(P.passives[EVO[w.id].passive]||0)>=2);
@@ -865,7 +914,8 @@ function openChest(big){
   spray(P.x,P.y,30,'#ffd23e',260);
   show('scrChest');
 }
-$('bChestOk').onclick=()=>{hideAll(['scrChest']);G.state='play';if(P.pend>0)openLevelUp();};
+$('bChestOk').onclick=()=>{hideAll(['scrChest']);G.state='play';
+  if(P.pend>0)openLevelUp();else relock();};
 
 /* ============================== WEAPON TICKS ============================== */
 function tickWeapons(dt){
@@ -1053,6 +1103,11 @@ function update(dt){
   let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
   let my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
   mx+=GP.x+TOUCH.x;my+=GP.y+TOUCH.y;
+  { // rotate input by camera yaw: W is always "away from camera"
+    const cy2=Math.cos(CAM.yaw),sy2=Math.sin(CAM.yaw);
+    const wx=mx*cy2+my*sy2,wz=-mx*sy2+my*cy2;
+    mx=wx;my=wz;
+  }
   P.moving=!!(mx||my);
   if(P.moving){const L=Math.hypot(mx,my);
     P.faceX=mx/L;P.faceY=my/L;
@@ -1324,6 +1379,24 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(4200,4200).rotateX(-Math.PI/
   new THREE.MeshPhongMaterial({shininess:0}));
 scene.add(ground);
 
+/* skydome: vertex-gradient sphere, immune to fog */
+const sky=(()=>{
+  const g=new THREE.SphereGeometry(2600,16,10);
+  g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*3),3));
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,fog:false}));
+  scene.add(m);return m;
+})();
+function colorSky(map){
+  const top=new THREE.Color(map.skyTop),hor=new THREE.Color(map.sky);
+  const pos=sky.geometry.attributes.position,col=sky.geometry.attributes.color;
+  for(let i=0;i<pos.count;i++){
+    const f=clamp(pos.getY(i)/2600*1.7,0,1);
+    tmpC.lerpColors(hor,top,f);
+    col.setXYZ(i,tmpC.r,tmpC.g,tmpC.b);
+  }
+  col.needsUpdate=true;
+}
+
 function ipool(geo,mat,max,colored){
   const m=new THREE.InstancedMesh(geo,mat,max);
   m.count=0;m.frustumCulled=false;
@@ -1375,6 +1448,21 @@ function buildDecos(map){
     decoPools.push({pool,items,colored:d.colored,fly:d.fly});
   }
 }
+/* low-poly clouds */
+const cloudGeo=(()=>{const p=[];
+  P_(p,S(60,7,5),'#ffffff',0,0,0,{sy:.32});
+  P_(p,S(42,6,4),'#ffffff',46,7,12,{sy:.3});
+  P_(p,S(38,6,4),'#ffffff',-44,4,-10,{sy:.3});
+  return mergeParts(p);})();
+const cloudPool=ipool(cloudGeo,
+  new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.85,fog:false}),14,true);
+const CLOUD_S=5200;
+const wrapCloud=v=>((v%CLOUD_S)+CLOUD_S*1.5)%CLOUD_S-CLOUD_S/2;
+const cloudItems=[];
+for(let i=0;i<14;i++)cloudItems.push({x:rand(-CLOUD_S/2,CLOUD_S/2),z:rand(-CLOUD_S/2,CLOUD_S/2),
+  h:rand(520,860),s:rand(1,2.4),ry:rand(TAU),spd:rand(4,11)});
+const cloudTint=new THREE.Color(0xffffff);
+
 function applyMap(m){
   MAP=m;
   renderer.setClearColor(m.sky);
@@ -1383,6 +1471,7 @@ function applyMap(m){
   sun.color.set(m.sun[0]);sun.intensity=m.sun[1];
   if(ground.material.map)ground.material.map.dispose();
   ground.material.map=makeGroundTex(m);ground.material.needsUpdate=true;
+  colorSky(m);cloudTint.set(m.cloud);
   buildDecos(m);
 }
 applyMap(MAPS[0]);
@@ -1734,15 +1823,27 @@ function render3d(){
   const t=perfT;
   const px=P?P.x:0,py=P?P.y:0;
   // camera
-  if(P){
+  if(P){ // 360° chase cam: orbit player by yaw/pitch/dist
     const shm=SAVE.settings.shake?1.6:0;
     const shx=(Math.random()-.5)*G.shake*shm,shz=(Math.random()-.5)*G.shake*shm;
-    camera.position.set(px+shx,430,py+385+shz);
-    camera.lookAt(px+shx*.4,16,py+shz*.4);
-  }else{ // title screen: slow orbit over the lawn
-    camera.position.set(Math.sin(t*.07)*470,320,Math.cos(t*.07)*470);
-    camera.lookAt(0,22,0);
+    const hr=Math.cos(CAM.pitch)*CAM.dist,ch=34+Math.sin(CAM.pitch)*CAM.dist;
+    camera.position.set(px+Math.sin(CAM.yaw)*hr+shx,ch,py+Math.cos(CAM.yaw)*hr+shz);
+    // aim slightly ahead of the player so they sit low in frame
+    camera.lookAt(px-Math.sin(CAM.yaw)*46+shx*.3,30,py-Math.cos(CAM.yaw)*46+shz*.3);
+  }else{ // title screen: slow low orbit over the lawn
+    camera.position.set(Math.sin(t*.07)*430,150,Math.cos(t*.07)*430);
+    camera.lookAt(0,40,0);
   }
+  // sky follows the player; clouds drift and wrap
+  sky.position.set(px,0,py);
+  {let cn=0;
+   for(const c of cloudItems){
+     c.x+=c.spd*.016;
+     const wx=px+wrapCloud(c.x-px),wz=py+wrapCloud(c.z-py);
+     put(cloudPool,cn,wx,c.h,wz,0,c.ry,0,c.s,c.s,c.s);
+     cloudPool.setColorAt(cn,cloudTint);cn++;
+   }
+   flush(cloudPool,cn);}
   // ground follows, snapped to tile so the texture looks infinite
   ground.position.set(Math.round(px/TILE)*TILE,0,Math.round(py/TILE)*TILE);
   // decorations wrap around player
@@ -2045,11 +2146,14 @@ function setBtnTxt(){
   $('sDmg').textContent=SAVE.settings.dmgnum?'ON':'OFF';
   $('sMusicV').textContent=Math.round(SAVE.settings.music*100)+'%';
   $('sSfxV').textContent=Math.round(SAVE.settings.sfx*100)+'%';
+  $('sSensV').textContent=Math.round((SAVE.settings.sens||1)*100)+'%';
   $('crt').style.display=SAVE.settings.crt?'block':'none';
 }
 $('bSettings').onclick=()=>{hideAll(['scrMenu']);
   $('sMusic').value=SAVE.settings.music*100;$('sSfx').value=SAVE.settings.sfx*100;
+  $('sSens').value=(SAVE.settings.sens||1)*100;
   setBtnTxt();show('scrSettings');G.state='settings';};
+$('sSens').oninput=e=>{SAVE.settings.sens=e.target.value/100;persist();setBtnTxt();};
 $('bBack3').onclick=()=>{hideAll(['scrSettings']);refreshMenu();show('scrMenu');G.state='menu';};
 $('sMusic').oninput=e=>{SAVE.settings.music=e.target.value/100;persist();AU.applyVols();setBtnTxt();};
 $('sSfx').oninput=e=>{SAVE.settings.sfx=e.target.value/100;persist();AU.applyVols();setBtnTxt();AU.coin();};
@@ -2073,6 +2177,7 @@ function lvCards(){return [...document.querySelectorAll('#cards .upcard')];}
 function gpFocusSet(i){const cs=lvCards();if(!cs.length)return;
   GP.focus=((i%cs.length)+cs.length)%cs.length;
   cs.forEach((c,j)=>c.classList.toggle('gpfocus',j===GP.focus));}
+let gpDt=1/60;
 function pollGamepad(){
   GP.x=0;GP.y=0;GP.dash=false;
   const gps=navigator.getGamepads?navigator.getGamepads():[];
@@ -2080,6 +2185,11 @@ function pollGamepad(){
   if(!g)return;
   const dz=v=>Math.abs(v)>.25?v:0;
   GP.x=dz(g.axes[0]||0);GP.y=dz(g.axes[1]||0);
+  const rx=dz(g.axes[2]||0),ry=dz(g.axes[3]||0); // right stick: camera
+  if(G.state==='play'&&(rx||ry)){
+    CAM.yaw-=rx*gpDt*3.1*sens();
+    CAM.pitch=clamp(CAM.pitch+ry*gpDt*2.2*sens(),.12,1.15);
+  }
   const bp=i=>g.buttons[i]&&g.buttons[i].pressed;
   if(bp(14))GP.x=-1;if(bp(15))GP.x=1;if(bp(12))GP.y=-1;if(bp(13))GP.y=1;
   GP.dash=bp(0)||bp(1); // A or B to dash
@@ -2099,8 +2209,10 @@ let last=performance.now(),perfT=0;
 function frame(now){
   requestAnimationFrame(frame);
   let dt=Math.min(.033,(now-last)/1000);last=now;perfT=now/1000;
-  pollGamepad();
+  gpDt=dt;pollGamepad();
   if(G.state!=='play'&&TOUCH.id!==null)joyHide(); // drop stick when a modal opens
+  if(G.state!=='play'&&CAMT.id!==null)CAMT.id=null;
+  if(G.state!=='play'&&document.pointerLockElement)document.exitPointerLock();
   G.ts+=(1-G.ts)*dt*2.5;
   if(G.state==='play')update(dt*G.ts);
   if(G.state==='select')drawPortraits();
@@ -2138,6 +2250,11 @@ window.TH={
     if(best){const L=Math.hypot(best.x-P.x,best.y-P.y)||1;
       vx+=(best.x-P.x)/L*1.3;vy+=(best.y-P.y)/L*1.3;}
     if(!vx&&!vy){vx=Math.cos(G.t*.4);vy=Math.sin(G.t*.4);}
+    { // bot thinks in world space; convert to camera-relative key presses
+      const cy=Math.cos(CAM.yaw),sy=Math.sin(CAM.yaw);
+      const ix=vx*cy-vy*sy,iy=vx*sy+vy*cy;
+      vx=ix;vy=iy;
+    }
     keys.w=vy<-.3;keys.s=vy>.3;keys.a=vx<-.3;keys.d=vx>.3;
     keys[' ']=nd<60*60||Math.random()<.01; // panic dash like a real player
   },
@@ -2152,7 +2269,7 @@ window.TH={
     return {w:c.width,h:c.height,colors:cols.size,
       top:px(c.width>>1,6),mid:px(c.width>>1,c.height>>1),bot:px(c.width>>1,c.height-8)};
   },
-  three:{scene,camera,renderer,sun},
+  three:{scene,camera,renderer,sun},cam:CAM,
   G,get P(){return P;},get E(){return enemies;},get BL(){return bullets;}
 };
 </script>

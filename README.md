@@ -13,15 +13,18 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 - 8 passives, 8 enemy types, 3 bosses, horde events, elite chests
 - 3 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One
 - 10 achievements, permanent meta shop, persistent saves
+- **Full 360° third-person camera** — mouse-look (click to capture), drag, scroll zoom, right-stick, or right-thumb
 - Keyboard, mouse, **gamepad**, and **touch** controls
 - Fully synthesized soundtrack & SFX (WebAudio — zero audio files)
-- Authentic N64-era rendering: 270p internal resolution, bilinear blur, fog, flat-shaded vertex-colored low-poly models
+- Authentic N64-era rendering: 270p internal resolution, bilinear blur, fog, gradient skydome, drifting low-poly clouds, flat-shaded vertex-colored models
 
 ## Controls
 
 | | Desktop | Gamepad | Touch |
 |---|---|---|---|
-| Move | WASD / arrows | left stick / d-pad | drag anywhere |
+| Move (camera-relative) | WASD / arrows | left stick / d-pad | left-half drag |
+| Look | mouse (click to capture) or drag | right stick | right-half drag |
+| Zoom | scroll wheel | — | — |
 | Dash | Space / Shift | A / B | 💨 button |
 | Pause | P / Esc | Start | ⏸ button |
 | Mute | M | — | settings |
