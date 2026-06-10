@@ -178,6 +178,17 @@
     100%{opacity:0;transform:translate(-50%,-65%) scale(1)}}
   #redflash{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(255,30,30,.45));
     opacity:0;pointer-events:none;z-index:9;transition:opacity .25s;}
+  #bossIntro{position:fixed;inset:0;z-index:14;pointer-events:none;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:rgba(0,0,0,.5);animation:biFade 2s ease forwards;}
+  #bossIntro::before,#bossIntro::after{content:'';position:absolute;left:0;right:0;height:11vh;background:#000;}
+  #bossIntro::before{top:0;}#bossIntro::after{bottom:0;}
+  #bossIntro .bi1{font-family:Impact,"Arial Black",sans-serif;font-size:min(9vw,72px);letter-spacing:3px;
+    color:#ff6a6a;text-shadow:0 5px 0 #4d0c0c,0 10px 28px #000;animation:biPop .5s ease-out;}
+  #bossIntro.karen .bi1{color:#ff3b3b;font-size:min(11vw,88px);
+    text-shadow:0 0 28px rgba(255,60,60,.8),0 5px 0 #4d0c0c,0 10px 28px #000;}
+  #bossIntro .bi2{font-weight:700;color:#fff;font-size:17px;margin-top:8px;text-shadow:0 2px 4px #000;}
+  @keyframes biPop{0%{transform:scale(2.6);opacity:0}55%{transform:scale(.96);opacity:1}100%{transform:scale(1)}}
+  @keyframes biFade{0%,75%{opacity:1}100%{opacity:0}}
   .shoprow{display:flex;align-items:center;gap:14px;background:#141d12;border:2px solid #2c3f24;border-radius:12px;
     padding:10px 16px;margin:6px;width:min(560px,92vw);text-align:left;}
   .shoprow .ic{font-size:34px;}
@@ -228,6 +239,7 @@
 <div id="joy"><div id="joyRing"></div><div id="joyDot"></div></div>
 
 <div id="banner"><div class="b1"></div><div class="b2"></div></div>
+<div id="bossIntro" class="hide"><div class="bi1"></div><div class="bi2"></div></div>
 <div id="toasts"></div>
 
 <div id="scrMenu" class="screen">
@@ -243,7 +255,7 @@
   <div class="stats-line" id="menuStats"></div>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.4 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.5 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -264,6 +276,7 @@
   <h2 class="bigword">LEVEL UP!</h2>
   <div style="color:#9ab59a;font-size:13px">pick one — the lawn depends on it</div>
   <div class="cards" id="cards"></div>
+  <button class="btn alt" id="bReroll" style="font-size:17px;padding:9px 26px"></button>
 </div>
 
 <div id="scrChest" class="screen hide">
@@ -398,6 +411,8 @@ const AU={
   heal(){this.tone(440,880,.18,'sine',.12);},
   win(){if(!this.ctx)return;[523,659,784,1047,784,1047].forEach((f,i)=>
     this.tone(f,f,.22,'triangle',.15,this.ctx.currentTime+i*.13));},
+  karenSting(){if(!this.ctx)return;[233,466,220,440,117].forEach((f,i)=>
+    this.tone(f,f*.985,.6,'sawtooth',.13,this.ctx.currentTime+i*.06));},
   lose(){if(!this.ctx)return;[392,370,349,330].forEach((f,i)=>
     this.tone(f,f*.96,.32,'sawtooth',.12,this.ctx.currentTime+i*.24));},
   sched(){
@@ -458,6 +473,7 @@ addEventListener('keydown',e=>{
     if(k==='arrowleft'||k==='a')gpFocusSet(GP.focus-1);
     if(k==='arrowright'||k==='d')gpFocusSet(GP.focus+1);
     if(k==='enter'||k===' '){const cs=lvCards();if(cs[GP.focus])cs[GP.focus].click();}
+    if(k==='r')$('bReroll').click();
   }else if(G.state==='chest'&&(k==='enter'||k===' '))$('bChestOk').click();
 });
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
@@ -671,7 +687,7 @@ const ACHS={
   maxed:{name:'Fully Torqued',desc:'Max any weapon to Lv5',icon:'⭐'},
   fullhouse:{name:'Full Shed',desc:'Fill all 10 slots',icon:'🧰'},
   untouched:{name:'Can\'t Touch Grass',desc:'Take no damage before 5:00',icon:'🛡️'},
-  auditor:{name:'Passed the Audit',desc:'Defeat THE INSPECTOR (endless, 15:00+)',icon:'🕴️'},
+  auditor:{name:'Passed the Audit',desc:'Defeat THE INSPECTOR (endless, 15:00+)',icon:'🕴️',unlocks:'map: PERPETUAL CARE'},
   overgrown:{name:'Overgrown',desc:'Win a MOW+ run',icon:'🔥'},
 };
 const INSPECTOR={id:'inspector',name:'THE INSPECTOR',hp:42000,spd:86,dmg:55,r:50,
@@ -746,6 +762,10 @@ const MAPS=[
    sky:0xa8dcec,skyTop:0x59b8e0,cloud:0xffffff,fogN:560,fogF:1550,hemi:[0xf2fbff,0x4a7d33,1.25],sun:[0xfff6e0,2.2],
    g1:'#58a13c',g2:'#4f9636',tuft:'#4a8a33',leaf1:'#357a28',leaf2:'#3f8a2e',
    mods:{xp:1.15,ehp:1.12},golf:true},
+  {id:'grave',name:'PERPETUAL CARE',icon:'🪦',desc:'+30% gold · +20% XP · enemies stronger & faster · the residents are restless',unlock:'auditor',
+   sky:0x2a3140,skyTop:0x10141d,cloud:0x39414f,fogN:380,fogF:1150,hemi:[0x9fb4d8,0x1a2420,.72],sun:[0xbfd0ff,.85],
+   g1:'#3a4a36',g2:'#33422f',tuft:'#41523c',leaf1:'#2a3d26',leaf2:'#33482e',
+   mods:{gold:1.3,xp:1.2,espd:1.1,ehp:1.15},fireflies:true,flyCol:0x9fd8ff,grave:true},
 ];
 let MAP=MAPS[0];
 
@@ -770,7 +790,7 @@ function newRun(charId){
     kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,boss:null,dying:false,
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
-    karenSpawned:false,karenT:0,karenDeadT:0,
+    karenSpawned:false,karenT:0,karenDeadT:0,rerolls:2,
     mowplus:!!(SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
   setPlayerModel(charId);
   for(let i=0;i<5;i++){const a=i/5*TAU+rand(.5); // a few greeters so the run opens hot
@@ -936,9 +956,13 @@ function openLevelUp(){
   if(!picks.length)picks.push({kind:'heal'});
   const cd=$('cards');cd.innerHTML='';
   for(const p of picks)cd.appendChild(makeCard(p,()=>{applyChoice(p);closeLevelUp();}));
+  const rb=$('bReroll');
+  rb.textContent=`🎲 REROLL (${G.rerolls} left)`;
+  rb.disabled=G.rerolls<=0;rb.style.opacity=G.rerolls>0?1:.45;
   show('scrLevel');
   GP.focus=0;gpFocusSet(0);
 }
+$('bReroll').onclick=()=>{if(G.rerolls>0&&G.state==='levelup'){G.rerolls--;openLevelUp();}};
 function makeCard(p,onClick){
   const div=document.createElement('div');div.className='upcard';
   if(p.kind==='heal'){
@@ -1165,8 +1189,17 @@ function spawnBoss(def){
     elite:false,boss:true,kx:0,ky:0,vx:0,vy:0,flashT:0,slowT:0,dead:false,lastHit:{},
     ox:0,oy:0,ph:0,aiT:3,chargeT:0};
   enemies.push(b);G.boss=b;AU.bossCry();G.shake=12;
-  banner('⚠ '+def.name,def.sub);
+  bossIntro(def.name,def.sub,def.id==='karen');
   return b;
+}
+function bossIntro(name,sub,isKaren){
+  const d=$('bossIntro');
+  d.classList.remove('hide','karen');void d.offsetWidth; // restart animations
+  if(isKaren){d.classList.add('karen');AU.karenSting();}
+  d.querySelector('.bi1').textContent=name;
+  d.querySelector('.bi2').textContent=sub;
+  G.ts=Math.min(G.ts,.3); // dramatic slow-motion entrance
+  setTimeout(()=>d.classList.add('hide'),2000);
 }
 function spawnKaren(){
   G.karenSpawned=true;G.karenT=G.t;
@@ -1494,7 +1527,8 @@ const sun=new THREE.DirectionalLight(0xfff2d8,2.0);sun.position.set(320,520,160)
 const ODPR=Math.min(devicePixelRatio||1,1.5);
 let IW=480,IH=270;
 function resize(){
-  const a=innerWidth/innerHeight;
+  const vw=Math.max(64,innerWidth),vh=Math.max(64,innerHeight);
+  const a=vw/vh;
   const base=(SAVE.settings&&SAVE.settings.res)||270;
   if(a>=1){IH=base;IW=Math.round(IH*a/2)*2;}     // landscape: fixed height
   else{IW=base;IH=Math.round(IW/a/2)*2;}          // portrait: fixed width
@@ -1502,7 +1536,7 @@ function resize(){
   camera.aspect=IW/IH;
   camera.fov=a<1?64:52; // widen FOV in portrait so the lawn stays visible
   camera.updateProjectionMatrix();
-  ov.width=Math.round(innerWidth*ODPR);ov.height=Math.round(innerHeight*ODPR);
+  ov.width=Math.round(vw*ODPR);ov.height=Math.round(vh*ODPR);
 }
 addEventListener('resize',resize);resize();
 
@@ -1614,9 +1648,9 @@ function buildDecos(map){
   const tuft=[];P_(tuft,C(5,14,5),map.tuft,0,7,0);P_(tuft,C(4,11,5),map.leaf2,6,5,3);P_(tuft,C(4,11,5),map.leaf1,-5,5,-3);
   defs.push({geo:mergeParts(tuft),n:56,colored:false,s:[.7,1.4]});
   if(map.fireflies){
-    const fly=[];P_(fly,S(3,5,4),'#ffe07a',0,0,0);
+    const fly=[];P_(fly,S(3,5,4),'#ffffff',0,0,0);
     defs.push({geo:mergeParts(fly),n:44,colored:false,s:[.5,1],fly:true,
-      mat:new THREE.MeshBasicMaterial({color:0xffe07a})});
+      mat:new THREE.MeshBasicMaterial({color:map.flyCol||0xffe07a})});
   }else{
     const flower=[];P_(flower,CY(.8,.8,10,4),map.tuft,0,5,0);P_(flower,S(3.5,5,4),'#ffffff',0,11,0);
     defs.push({geo:mergeParts(flower),n:40,colored:true,s:[.8,1.3]});
@@ -1628,6 +1662,13 @@ function buildDecos(map){
   if(map.golf){
     const flag=[];P_(flag,CY(.9,.9,46,4),'#f2f2f2',0,23,0);P_(flag,B(13,7,1),'#d62828',7,41,0);
     defs.push({geo:mergeParts(flag),n:10,colored:false,s:[.9,1.1]});
+  }
+  if(map.grave){
+    const tomb=[];
+    P_(tomb,B(18,3,10),'#565e6c',0,1.5,0);
+    P_(tomb,B(14,18,4),'#6a7280',0,11,0);
+    P_(tomb,CY(7,7,4,8),'#6a7280',0,20,0,{rx:Math.PI/2});
+    defs.push({geo:mergeParts(tomb),n:26,colored:false,s:[.7,1.35]});
   }
   for(const d of defs){
     const pool=ipool(d.geo,d.mat||MAT,d.n,d.colored);
@@ -2476,6 +2517,7 @@ function pollGamepad(){
     if(edge(14))gpFocusSet(GP.focus-1);
     if(edge(15))gpFocusSet(GP.focus+1);
     if(edge(0)){const cs=lvCards();if(cs[GP.focus])cs[GP.focus].click();}
+    if(edge(2))$('bReroll').click(); // X rerolls
   }else if(G.state==='chest'&&edge(0))$('bChestOk').click();
   else if(G.state==='dead'&&edge(0))$('bRetry').click();
   else if(G.state==='won'&&edge(0))$('bGoOn').click();
