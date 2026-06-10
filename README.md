@@ -15,6 +15,7 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 - **KAREN, FINAL FORM** — the true final boss at 12:00: three phases, complaint barrages, HOA summons, manager-voice screams, and she teleports if you try to walk away. Victory means evicting her.
 - 4 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One, and PERPETUAL CARE (a restless cemetery)
 - Cinematic boss intro cards, level-up rerolls (2 per run)
+- **📅 Daily Run** — date-seeded so everyone fights the same waves; chase your best thwack count and share it
 - 12 achievements with a trophies gallery, permanent meta shop, persistent saves
 - **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
 - **Installable PWA** — add it to your home screen; plays fully offline after first load

@@ -248,6 +248,7 @@
   <div class="small">Any resemblance to other bonk-adjacent video games is purely coincidental and, frankly, hurtful to suggest. We have a pickle. In 3D.</div>
   <div style="margin-top:18px">
     <button class="btn" id="bPlay">PLAY</button>
+    <button class="btn gold" id="bDaily">📅 DAILY RUN</button>
     <button class="btn gold" id="bShop">LAWN SHOP</button>
     <button class="btn alt" id="bTrophies">TROPHIES</button>
     <button class="btn alt" id="bSettings">SETTINGS</button>
@@ -255,11 +256,12 @@
   <div class="stats-line" id="menuStats"></div>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.5 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.6 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
   <h2 class="bigword">CHOOSE YOUR DEFENDER</h2>
+  <div id="selNote" class="small hide" style="color:var(--gold);font-weight:700;font-size:13px"></div>
   <div id="mapwrap"></div>
   <div class="charwrap" id="charwrap"></div>
   <button class="btn alt" id="bBack1">BACK</button>
@@ -317,6 +319,7 @@
   <h2 class="bigword" style="color:#ff5d5d">YOU GOT THWACKED</h2>
   <div class="deadstats" id="deadStats"></div>
   <div><button class="btn" id="bRetry">ONE MORE LAWN</button>
+  <button class="btn alt" id="bShare1">📋 SHARE</button>
   <button class="btn alt" id="bMenu1">MENU</button></div>
 </div>
 
@@ -324,6 +327,7 @@
   <h2 class="bigword">LAWN DEFENDED!</h2>
   <div class="deadstats" id="winStats"></div>
   <div><button class="btn" id="bGoOn">KEEP MOWING (endless)</button>
+  <button class="btn alt" id="bShare2">📋 SHARE</button>
   <button class="btn alt" id="bMenu2">MENU</button></div>
 </div>
 
@@ -334,25 +338,35 @@
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
-const rand=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
+/* RNG is swappable: daily runs seed it so everyone fights the same waves */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296;};}
+let RNG=Math.random;
+const setSeed=s=>{RNG=mulberry32(s);};
+const clearSeed=()=>{RNG=Math.random;};
+const rand=(a=1,b)=>b===undefined?RNG()*a:a+RNG()*(b-a);
 const irand=(a,b)=>Math.floor(rand(a,b+1));
-const choice=a=>a[Math.floor(Math.random()*a.length)];
+const choice=a=>a[Math.floor(RNG()*a.length)];
 const d2=(ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
-function wpick(arr){let s=0;for(const a of arr)s+=a[1];let r=Math.random()*s;
+function wpick(arr){let s=0;for(const a of arr)s+=a[1];let r=RNG()*s;
   for(const a of arr){r-=a[1];if(r<=0)return a[0];}return arr[arr.length-1][0];}
+const todayStr=()=>{const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const dailySeed=()=>parseInt(todayStr().replace(/-/g,''),10);
 function hash2(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>13))*1274126177|0;return ((h^(h>>16))>>>0)/4294967295;}
 const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 const $=id=>document.getElementById(id);
 
 /* ============================== SAVE ============================== */
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0},ach:{},lastMap:'lawn',
-  mowplus:0,mowWins:{},bests:{},
+  mowplus:0,mowWins:{},bests:{},daily:null,
   settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
 try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
   if(s){SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
-    mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},
+    mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,
     settings:{...SAVE_DEF.settings,...(s.settings||{})},stats:{...SAVE_DEF.stats,...(s.stats||{})}};}
 }catch(e){}
 function persist(){try{localStorage.setItem('thwackalypse',JSON.stringify(SAVE));}catch(e){}}
@@ -450,7 +464,10 @@ const AU={
     if(s%4===0)this.tone(150,40,.12,'sine',.5,t,this.mg);
     if(s===4||s===12)this.noise(.09,.3,1800,t,this.mg);
     if(s%2===0)this.noise(.03,s%4===2?.12:.06,7000,t,this.mg);
-    const riff={0:110,3:110,6:130.81,8:110,11:164.81,14:bar%2?98:196};
+    // late game shifts to the B-section every other pair of bars
+    const useB=G.t>360&&(bar%4)>=2;
+    const riff=useB?{0:146.83,3:146.83,6:174.61,8:146.83,11:220,14:bar%2?130.81:261.63}
+                   :{0:110,3:110,6:130.81,8:110,11:164.81,14:bar%2?98:196};
     if(riff[s]!==undefined)this.tone(riff[s],riff[s],.16,'sawtooth',.25,t,this.mg);
     if(G.t>45&&bar%2===0&&s%2===1&&hash2(bar,s)>.45){
       const sc=[220,261.63,329.63,392,440,523.25];
@@ -777,9 +794,12 @@ let enemies=[],bullets=[],ebullets=[],gems=[],coins=[],pickups=[],parts=[],texts
 let grid=new Map();
 let uidc=1;
 
+let pendingDaily=false;
 function newRun(charId){
   const c=CHARS.find(x=>x.id===charId);
-  applyMap(MAPS.find(m=>m.id===SAVE.lastMap)||MAPS[0]);
+  if(pendingDaily){applyMap(MAPS[0]);setSeed(dailySeed());}
+  else{clearSeed();applyMap(MAPS.find(m=>m.id===SAVE.lastMap)||MAPS[0]);}
+  SAVE.stats.runs=(SAVE.stats.runs||0)+1;persist();
   P={char:c,x:0,y:0,r:13,hp:0,lvl:1,xp:0,xpNext:14,pend:0,
     faceX:1,faceY:0,moving:false,iT:0,dashT:0,dashCd:0,
     weapons:[],passives:{},stats:null,uid:'P',dmgBy:{}};
@@ -791,7 +811,8 @@ function newRun(charId){
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
     karenSpawned:false,karenT:0,karenDeadT:0,rerolls:2,
-    mowplus:!!(SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
+    daily:pendingDaily,
+    mowplus:!!(!pendingDaily&&SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
   setPlayerModel(charId);
   for(let i=0;i<5;i++){const a=i/5*TAU+rand(.5); // a few greeters so the run opens hot
     spawnEnemy('gnome',Math.cos(a)*rand(260,340),Math.sin(a)*rand(260,340));}
@@ -829,7 +850,7 @@ function nearestEnemy(x,y,maxD=520){
 function fireBullet(o){bullets.push(Object.assign({pierce:1,life:2,r:8,kind:'toast',hitMap:null,rot:0,rotS:0},o));}
 
 function hitEnemy(e,dmg,opts={}){
-  let crit=Math.random()<(P.stats.crit+(opts.critBonus||0));
+  let crit=RNG()<(P.stats.crit+(opts.critBonus||0));
   let d=dmg*P.stats.dmg*(crit?2:1);
   d=Math.round(d*rand(.92,1.08));
   e.hp-=d;G.dmgDealt+=d;e.flashT=.09;
@@ -839,7 +860,7 @@ function hitEnemy(e,dmg,opts={}){
   if(kb){const dx=e.x-(opts.fx??P.x),dy=e.y-(opts.fy??P.y),L=Math.hypot(dx,dy)||1;
     e.kx+=dx/L*kb;e.ky+=dy/L*kb;}
   popText(e.x+rand(-8,8),e.y,Math.round(d),crit?'#ffd23e':'#fff',crit?22:15+Math.min(10,d/12),e.r+30);
-  if(crit){AU.crit();if(Math.random()<.25)popText(e.x,e.y,'THWACK!','#ff5d8f',17,e.r+54);}
+  if(crit){AU.crit();if(RNG()<.25)popText(e.x,e.y,'THWACK!','#ff5d8f',17,e.r+54);}
   else AU.hit();
   spray(e.x,e.y,3,e.col,120);
   if(e.hp<=0){killEnemy(e);if(crit)G.ts=Math.min(G.ts,.45);} // crit-kill hit-stop
@@ -862,6 +883,7 @@ function killEnemy(e){
     if(e.type==='karen'){
       G.karenDeadT=G.t;
       if(G.t-G.karenT<90)ach('onestar');
+      pickups.push({x:e.x-40,y:e.y-20,kind:'phone'}); // she dropped the evidence
     }
     if(['hoa','landlord','gentri'].includes(e.type))G.bossesRun.push(e.type);
     if(new Set(G.bossesRun).size>=3)ach('sweep');
@@ -875,9 +897,9 @@ function killEnemy(e){
     gems.push(gem(e.x,e.y,e.xp));
     if(e.elite){pickups.push({x:e.x,y:e.y,kind:'chest'});for(let i=0;i<6;i++)coins.push({x:e.x+rand(-40,40),y:e.y+rand(-40,40),v:2});}
     else{
-      if(Math.random()<e.gold)coins.push({x:e.x,y:e.y,v:1});
-      if(Math.random()<.013)pickups.push({x:e.x,y:e.y,kind:'burger'});
-      if(Math.random()<.004)pickups.push({x:e.x,y:e.y,kind:'magnet'});
+      if(RNG()<e.gold)coins.push({x:e.x,y:e.y,v:1});
+      if(RNG()<.013)pickups.push({x:e.x,y:e.y,kind:'burger'});
+      if(RNG()<.004)pickups.push({x:e.x,y:e.y,kind:'magnet'});
     }
   }
 }
@@ -910,15 +932,38 @@ function die(){
     $('deadStats').innerHTML=
       `Survived <b>${fmtT(G.t)}</b> · Level <b>${P.lvl}</b><br>`+
       `💀 <b>${G.kills}</b> thwacked · 🪙 <b>${G.gold}</b> banked<br>`+
-      `Total damage: <b>${G.dmgDealt.toLocaleString()}</b>`+weaponStatsHtml();
+      `Total damage: <b>${G.dmgDealt.toLocaleString()}</b>`+dailyLineHtml()+weaponStatsHtml();
     show('scrDead');G.state='dead';
   },900);
 }
 function bankGold(){if(!G.banked){SAVE.gold+=G.gold;G.banked=true;
   SAVE.stats.totalGold+=G.gold;SAVE.stats.totalKills+=G.kills;
   if(P)SAVE.bests[P.char.id]=Math.max(SAVE.bests[P.char.id]||0,Math.floor(G.t));
+  if(G.daily){const t=todayStr();
+    if(!SAVE.daily||SAVE.daily.date!==t||G.kills>SAVE.daily.score)
+      SAVE.daily={date:t,score:G.kills};}
   if(SAVE.stats.totalGold>=1000)ach('rich');
   persist();}}
+function dailyLineHtml(){
+  if(!G.daily)return '';
+  const best=(SAVE.daily&&SAVE.daily.date===todayStr())?SAVE.daily.score:0;
+  return `<br>📅 DAILY ${todayStr()}: <b>${G.kills}</b> 💀 ${G.kills>=best?'— <b style="color:var(--gold)">BEST TODAY</b>':'(best '+best+')'}`;
+}
+function shareText(){
+  return `🩴 THWACKALYPSE 64${G.daily?' DAILY '+todayStr():''} — survived ${fmtT(G.t)}, `+
+    `${G.kills.toLocaleString()} thwacked${G.won?', KAREN evicted':''} → https://stobieee-bit.github.io/thwackalypse/`;
+}
+function wireShare(btnId){
+  const b=$(btnId);
+  b.onclick=()=>{
+    const t=shareText();
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(()=>{b.textContent='✅ COPIED!';},
+        ()=>{b.textContent='❌ COPY FAILED';});
+    }else b.textContent='❌ NO CLIPBOARD';
+    setTimeout(()=>b.textContent='📋 SHARE',2000);
+  };
+}
 function spray(x,y,n,col,spd=200){
   if(parts.length>460)return;
   for(let i=0;i<n;i++){const a=rand(TAU),s=rand(.3,1)*spd;
@@ -1245,7 +1290,7 @@ function winScreen(){
   bankGold();if(G.t>SAVE.best){SAVE.best=G.t;persist();}
   AU.win();
   $('winStats').innerHTML=`You defeated <b>KAREN, FINAL FORM</b>${G.mowplus?' on <b style="color:#ff7a3c">MOW+</b>':''}. The lawn is finally quiet.<br>
-    💀 <b>${G.kills}</b> thwacked · 🪙 <b>${G.gold}</b> banked · Level <b>${P.lvl}</b>`+weaponStatsHtml();
+    💀 <b>${G.kills}</b> thwacked · 🪙 <b>${G.gold}</b> banked · Level <b>${P.lvl}</b>`+dailyLineHtml()+weaponStatsHtml();
   show('scrWin');G.state='won';
 }
 function weaponStatsHtml(){
@@ -1444,6 +1489,10 @@ function update(dt){
   }
   for(let i=pickups.length-1;i>=0;i--){
     const pk=pickups[i],rr=22+P.r;
+    if(pk.kind==='phone'){ // the evidence delivers itself
+      const dx=P.x-pk.x,dy=P.y-pk.y,L=Math.hypot(dx,dy)||1;
+      pk.x+=dx/L*380*dt;pk.y+=dy/L*380*dt;
+    }
     if(d2(pk.x,pk.y,P.x,P.y)<rr*rr){
       pickups.splice(i,1);
       if(pk.kind==='chest')openChest(pk.big);
@@ -1451,6 +1500,8 @@ function update(dt){
         popText(P.x,P.y,'+40','#7f7',18,50);}
       else if(pk.kind==='magnet'){for(const g of gems)g.pull=true;AU.heal();
         popText(P.x,P.y,'FRIDGE MAGNET!','#6fd3ff',16,50);}
+      else if(pk.kind==='phone'){P.hp=P.stats.maxHp;G.gold+=250;AU.chest();
+        popText(P.x,P.y,'EVIDENCE DELETED. +250g','#6fd3ff',19,56);}
     }
   }
 
@@ -2034,10 +2085,18 @@ function buildMagnet(){
   P_(p,B(4.8,3,4.8),'#d8d8d8',-5,1.5,0);P_(p,B(4.8,3,4.8),'#d8d8d8',5,1.5,0);
   g.add(new THREE.Mesh(mergeParts(p),MAT));return g;
 }
-const pkPools={chest:[],burger:[],magnet:[]};
+function buildPhone(){
+  const g=new THREE.Group();const p=[];
+  P_(p,B(7,13,2),'#1b1b22',0,8,0);
+  P_(p,S(1.4,4,3),'#6fd3ff',0,12,1.3);
+  P_(p,B(5.5,11,.6),'#39414f',0,8,1.1);
+  g.add(new THREE.Mesh(mergeParts(p),MAT));return g;
+}
+const pkPools={chest:[],burger:[],magnet:[],phone:[]};
 for(let i=0;i<10;i++){const m=buildChest();m.visible=false;scene.add(m);pkPools.chest.push(m);}
 for(let i=0;i<8;i++){const m=buildBurger();m.visible=false;scene.add(m);pkPools.burger.push(m);}
 for(let i=0;i<4;i++){const m=buildMagnet();m.visible=false;scene.add(m);pkPools.magnet.push(m);}
+for(let i=0;i<2;i++){const m=buildPhone();m.visible=false;scene.add(m);pkPools.phone.push(m);}
 
 /* ---------- portraits ---------- */
 let prend=null,pscene,pcam,pmodels=[];
@@ -2262,7 +2321,7 @@ function render3d(){
   }
   flush(coinPool,cn);
   // pickups
-  const pkIdx={chest:0,burger:0,magnet:0};
+  const pkIdx={chest:0,burger:0,magnet:0,phone:0};
   for(const pk of pickups){
     const arr=pkPools[pk.kind];if(!arr)continue;
     const i=pkIdx[pk.kind];if(i>=arr.length)continue;
@@ -2363,7 +2422,8 @@ function togglePause(){
 }
 function refreshMenu(){
   $('menuStats').innerHTML=`🪙 <b style="color:var(--gold)">${SAVE.gold}</b> banked`+
-    (SAVE.best?` &nbsp;·&nbsp; ⏱ best: <b>${fmtT(SAVE.best)}</b>`:'');
+    (SAVE.best?` &nbsp;·&nbsp; ⏱ best: <b>${fmtT(SAVE.best)}</b>`:'')+
+    ((SAVE.daily&&SAVE.daily.date===todayStr())?` &nbsp;·&nbsp; 📅 today: <b>${SAVE.daily.score}</b> 💀`:'');
 }
 function buildSelect(){
   const mw=$('mapwrap');mw.innerHTML='';
@@ -2430,7 +2490,13 @@ function buildShop(){
     d.appendChild(b);rows.appendChild(d);
   }
 }
-$('bPlay').onclick=()=>{hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
+$('bPlay').onclick=()=>{pendingDaily=false;$('selNote').classList.add('hide');
+  hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
+$('bDaily').onclick=()=>{pendingDaily=true;
+  const n=$('selNote');n.classList.remove('hide');
+  n.textContent=`📅 DAILY RUN · ${todayStr()} · Front Lawn · seeded — everyone fights the same waves · score = thwacks`;
+  hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
+wireShare('bShare1');wireShare('bShare2');
 $('bShop').onclick=()=>{hideAll(['scrMenu']);buildShop();show('scrShop');G.state='shop';};
 /* trophies */
 function buildTrophies(){
@@ -2441,7 +2507,7 @@ function buildTrophies(){
     d.innerHTML=`<div class="ti">${g?A.icon:'🔒'}</div><div><div class="tn">${g?A.name:'? ? ?'}</div>
       <div class="td">${A.desc}${A.unlocks?' · 🔓 '+A.unlocks:''}</div></div>`;
     w.appendChild(d);}
-  $('lifeStats').innerHTML=`🏆 ${got}/${total} · 💀 ${SAVE.stats.totalKills.toLocaleString()} lifetime thwacks · `+
+  $('lifeStats').innerHTML=`🏆 ${got}/${total} · 🎮 ${SAVE.stats.runs||0} runs · 💀 ${SAVE.stats.totalKills.toLocaleString()} lifetime thwacks · `+
     `🪙 ${SAVE.stats.totalGold.toLocaleString()} lifetime gold · ⭐ ${SAVE.stats.wins} wins · 🧬 ${SAVE.stats.evos} evolutions`;
 }
 $('bTrophies').onclick=()=>{hideAll(['scrMenu']);buildTrophies();show('scrTrophies');G.state='trophies';};
