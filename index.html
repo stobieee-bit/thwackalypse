@@ -78,6 +78,10 @@
   .setrow input[type=range]{width:170px;accent-color:#9fff4a;}
   .btn.mini{font-size:15px;padding:7px 18px;margin:0;width:90px;}
   #trophyRows{display:flex;flex-direction:column;gap:6px;max-height:56vh;overflow-y:auto;padding:0 8px;}
+  #almRows{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow-y:auto;padding:0 8px;}
+  .almHead{font-family:Impact,"Arial Black",sans-serif;font-size:19px;color:var(--lime);letter-spacing:1px;
+    margin:10px 0 2px;text-align:left;width:min(480px,92vw);}
+  .almHead small{color:#9ab59a;font-family:"Segoe UI",sans-serif;font-size:11px;letter-spacing:0;font-weight:400;}
   .trow{display:flex;gap:12px;align-items:center;background:#141d12;border:2px solid #2c3f24;border-radius:12px;
     padding:8px 16px;width:min(480px,92vw);text-align:left;}
   .trow.got{border-color:var(--gold);}
@@ -251,12 +255,13 @@
     <button class="btn gold" id="bDaily">📅 DAILY RUN</button>
     <button class="btn gold" id="bShop">LAWN SHOP</button>
     <button class="btn alt" id="bTrophies">TROPHIES</button>
+    <button class="btn alt" id="bAlmanac">ALMANAC</button>
     <button class="btn alt" id="bSettings">SETTINGS</button>
   </div>
   <div class="stats-line" id="menuStats"></div>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.6 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.7 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -285,6 +290,12 @@
   <h2 class="bigword">🎁 CHEST!</h2>
   <div id="chestCard" class="cards"></div>
   <button class="btn" id="bChestOk">NICE</button>
+</div>
+
+<div id="scrAlmanac" class="screen hide">
+  <h2 class="bigword">THE ALMANAC</h2>
+  <div id="almRows"></div>
+  <button class="btn alt" id="bBack5" style="margin-top:10px">BACK</button>
 </div>
 
 <div id="scrTrophies" class="screen hide">
@@ -360,13 +371,13 @@ const $=id=>document.getElementById(id);
 
 /* ============================== SAVE ============================== */
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0},ach:{},lastMap:'lawn',
-  mowplus:0,mowWins:{},bests:{},daily:null,
+  mowplus:0,mowWins:{},bests:{},daily:null,seen:{},
   settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
 try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
   if(s){SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
-    mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,
+    mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,seen:{...(s.seen||{})},
     settings:{...SAVE_DEF.settings,...(s.settings||{})},stats:{...SAVE_DEF.stats,...(s.stats||{})}};}
 }catch(e){}
 function persist(){try{localStorage.setItem('thwackalypse',JSON.stringify(SAVE));}catch(e){}}
@@ -432,7 +443,7 @@ const AU={
   sched(){
     if(!this.ctx)return;
     const inRun=['play','levelup','chest','pause'].includes(G.state);
-    const inMenu=['menu','select','shop','settings','trophies'].includes(G.state);
+    const inMenu=['menu','select','shop','settings','trophies','almanac'].includes(G.state);
     const musicOn=!this.muted&&(inRun||inMenu);
     const spb=60/138/4;
     if(this.nextT<this.ctx.currentTime)this.nextT=this.ctx.currentTime+.05;
@@ -723,15 +734,24 @@ function ach(id){
   setTimeout(()=>d.classList.add('out'),4200);setTimeout(()=>d.remove(),4900);
 }
 const ENEMY={
-  gnome:{hp:14,spd:55,dmg:8,r:13,xp:1,col:'#d33',gold:.22},
-  pigeon:{hp:9,spd:98,dmg:6,r:10,xp:1,col:'#9aa',gold:.12},
-  flamingo:{hp:24,spd:72,dmg:10,r:14,xp:2,col:'#f7a',gold:.25},
-  roomba:{hp:18,spd:138,dmg:10,r:13,xp:2,col:'#789',gold:.25},
-  mole:{hp:80,spd:42,dmg:16,r:19,xp:5,col:'#a63',gold:.4},
-  crow:{hp:16,spd:118,dmg:10,r:12,xp:2,col:'#445',gold:.2},
-  gator:{hp:230,spd:38,dmg:26,r:26,xp:8,col:'#4a3',gold:.8},
-  patricia:{hp:380,spd:58,dmg:20,r:21,xp:20,col:'#fc6',gold:1,elite:true},
+  gnome:{hp:14,spd:55,dmg:8,r:13,xp:1,col:'#d33',gold:.22,
+    em:'🍄',title:'Lawn Gnome',lore:'Standard-issue lawn menace. Travels in disappointing numbers.'},
+  pigeon:{hp:9,spd:98,dmg:6,r:10,xp:1,col:'#9aa',gold:.12,
+    em:'🐦',title:'Pigeon',lore:'Hollow bones. Hollow morals.'},
+  flamingo:{hp:24,spd:72,dmg:10,r:14,xp:2,col:'#f7a',gold:.25,
+    em:'🦩',title:'Flamingo',lore:'Plastic exterior. Real grudge.'},
+  roomba:{hp:18,spd:138,dmg:10,r:13,xp:2,col:'#789',gold:.25,
+    em:'🤖',title:'Roomba',lore:'Firmware update 4.2 added bloodlust.'},
+  mole:{hp:80,spd:42,dmg:16,r:19,xp:5,col:'#a63',gold:.4,
+    em:'🕳️',title:'Mole',lore:'Property damage with a nose.'},
+  crow:{hp:16,spd:118,dmg:10,r:12,xp:2,col:'#445',gold:.2,
+    em:'🪶',title:'Crow',lore:'Remembers your face. Complains in groups.'},
+  gator:{hp:230,spd:38,dmg:26,r:26,xp:8,col:'#4a3',gold:.8,
+    em:'🐊',title:'Lawn Gator',lore:'The HOA said no pets. The gator disagreed.'},
+  patricia:{hp:380,spd:58,dmg:20,r:21,xp:20,col:'#fc6',gold:1,elite:true,
+    em:'📋',title:'Patricia, HOA Enforcer',lore:'Elite. Files complaints, drops paperwork (chests).'},
 };
+function markSeen(key){if(!SAVE.seen[key]){SAVE.seen[key]=1;persist();}}
 const BOSSES=[
   {at:180,id:'hoa',name:'HOWARD, HOA PRESIDENT',hp:2300,spd:46,dmg:22,r:34,sub:'He measured your grass. It\'s 0.4cm too tall.'},
   {at:390,id:'landlord',name:'THE LANDLORD',hp:5200,spd:42,dmg:26,r:38,sub:'Here to keep the deposit. All of it.'},
@@ -839,7 +859,8 @@ function recompute(){
   };
   if(oldMax&&P.stats.maxHp>oldMax)P.hp+=P.stats.maxHp-oldMax;
 }
-function addWeapon(id){P.weapons.push({id,lvl:1,uid:uidc++,cdT:.5,state:{ang:0,q:[]}});}
+function addWeapon(id){markSeen('w_'+id);
+  P.weapons.push({id,lvl:1,uid:uidc++,cdT:.5,state:{ang:0,q:[]}});}
 
 /* ============================== COMBAT ============================== */
 function nearestEnemy(x,y,maxD=520){
@@ -1054,6 +1075,7 @@ function openChest(big){
   for(let i=0;i<(big?3:1);i++){
     const ev=evoReady();
     if(ev){ev.evo=true;SAVE.stats.evos++;ach('evolved');evolvedW=ev;
+      markSeen('v_'+ev.id);
       got.push({kind:'evo',wid:ev.id});
       spray(P.x,P.y,40,'#ffd23e',320);AU.level();continue;}
     const pool=buildPool();
@@ -1218,6 +1240,7 @@ function spawnEnemy(type,x,y){
   const d=ENEMY[type],m=diffMul();
   if(x===undefined){const a=rand(TAU),dist=SPAWN_R+rand(0,140);
     x=P.x+Math.cos(a)*dist;y=P.y+Math.sin(a)*dist;}
+  markSeen('e_'+type);
   const mhp=d.hp*m*(MAP.mods.ehp||1)*(G.mowplus?1.6:1);
   enemies.push({id:uidc++,type,x,y,hp:mhp,maxHp:mhp,
     spd:d.spd*rand(.9,1.1)*(MAP.mods.espd||1)*(G.mowplus?1.15:1),
@@ -1234,6 +1257,7 @@ function spawnBoss(def){
     elite:false,boss:true,kx:0,ky:0,vx:0,vy:0,flashT:0,slowT:0,dead:false,lastHit:{},
     ox:0,oy:0,ph:0,aiT:3,chargeT:0};
   enemies.push(b);G.boss=b;AU.bossCry();G.shake=12;
+  markSeen('b_'+def.id);
   bossIntro(def.name,def.sub,def.id==='karen');
   return b;
 }
@@ -2512,6 +2536,44 @@ function buildTrophies(){
 }
 $('bTrophies').onclick=()=>{hideAll(['scrMenu']);buildTrophies();show('scrTrophies');G.state='trophies';};
 $('bBack4').onclick=()=>{hideAll(['scrTrophies']);refreshMenu();show('scrMenu');G.state='menu';};
+/* almanac */
+function almRow(em,title,desc,locked){
+  return `<div class="trow ${locked?'lock':'got'}"><div class="ti">${locked?'🔒':em}</div>
+    <div><div class="tn">${locked?'? ? ?':title}</div><div class="td">${desc}</div></div></div>`;
+}
+function buildAlmanac(){
+  const S=SAVE.seen,w=$('almRows');
+  let h='<div class="almHead">HOW TO PLAY</div>';
+  h+=almRow('🕹️','Survive 12 minutes','Move constantly. Weapons fire themselves. At 12:00, management arrives in person.',false);
+  h+=almRow('💎','Gems are XP','Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).',false);
+  h+=almRow('💨','Dash through danger','Dashing grants brief invincibility. Use it to pass through crowds and bullets.',false);
+  h+=almRow('🧬','Evolve your weapons','Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.',false);
+  h+=almRow('🪙','Gold is forever','Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.',false);
+  h+='<div class="almHead">ARSENAL <small>discovered by using each weapon</small></div>';
+  for(const id in WEAPONS){
+    const seen=!!S['w_'+id],evoSeen=!!S['v_'+id],E=EVO[id];
+    h+=almRow(WEAPONS[id].icon,WEAPONS[id].name,
+      seen?(evoSeen?`evolves into <b style="color:var(--gold)">${E.name}</b> ${E.icon}`
+                   :`pairs with ${PASSIVES[E.passive].name} · evolution undiscovered`)
+          :'find it in a level-up',!seen);
+  }
+  h+='<div class="almHead">RESIDENTS <small>discovered on sight</small></div>';
+  for(const id in ENEMY){
+    const d=ENEMY[id],seen=!!S['e_'+id];
+    h+=almRow(d.em,d.title,seen?`${d.lore} · ${d.hp} HP · ${d.dmg} dmg`:'not yet encountered',!seen);
+  }
+  h+='<div class="almHead">MANAGEMENT <small>they know where you live</small></div>';
+  const MGMT=[['hoa','⚖️','HOWARD, HOA PRESIDENT','He measured your grass. It\'s 0.4cm too tall.'],
+    ['landlord','🎩','THE LANDLORD','Here to keep the deposit. All of it.'],
+    ['gentri','🏗️','GENTRIFITRON 9000','BEEP BOOP. THIS LAWN IS NOW A LUXURY CONDO.'],
+    ['karen','📱','KAREN, FINAL FORM','She has been asked to leave. She has declined.'],
+    ['inspector','🕴️','THE INSPECTOR','Your lawn\'s final audit. He has questions.']];
+  for(const [id,em,title,lore] of MGMT)
+    h+=almRow(em,title,S['b_'+id]?lore:'not yet encountered',!S['b_'+id]);
+  w.innerHTML=h;
+}
+$('bAlmanac').onclick=()=>{hideAll(['scrMenu']);buildAlmanac();show('scrAlmanac');G.state='almanac';};
+$('bBack5').onclick=()=>{hideAll(['scrAlmanac']);refreshMenu();show('scrMenu');G.state='menu';};
 /* settings */
 let settingsFrom='menu';
 function setBtnTxt(){

@@ -16,6 +16,7 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 - 4 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One, and PERPETUAL CARE (a restless cemetery)
 - Cinematic boss intro cards, level-up rerolls (2 per run)
 - **📅 Daily Run** — date-seeded so everyone fights the same waves; chase your best thwack count and share it
+- **📖 The Almanac** — how-to-play guide plus a discovery codex: weapons, evolutions, residents, and management stay "???" until you meet them
 - 12 achievements with a trophies gallery, permanent meta shop, persistent saves
 - **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
 - **Installable PWA** — add it to your home screen; plays fully offline after first load
