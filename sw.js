@@ -1,5 +1,5 @@
 /* THWACKALYPSE 64 service worker — cache-first so the lawn loads offline */
-const CACHE = 'thwack-v2.0.0';
+const CACHE = 'thwack-v2.1.0';
 const ASSETS = ['./', './index.html', './three.min.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png'];
 

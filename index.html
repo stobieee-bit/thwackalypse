@@ -99,42 +99,16 @@
     transform:translate(-50%,-50%);background:rgba(0,0,0,.18);}
   #joyDot{position:absolute;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.5);
     transform:translate(-50%,-50%);}
-  #btnDash{display:none;position:absolute;right:18px;bottom:24px;width:80px;height:80px;border-radius:50%;
+  #btnDash{display:none;position:absolute;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:80px;height:80px;border-radius:50%;
     border:3px solid #6fd3ff;background:rgba(18,38,48,.6);font-size:34px;pointer-events:auto;color:#fff;}
   #btnDash.cd{border-color:#39637a;opacity:.5;}
-  #btnPause2{display:none;position:absolute;right:12px;top:112px;width:44px;height:44px;border-radius:50%;
+  #btnPause2{display:none;position:absolute;right:calc(12px + env(safe-area-inset-right,0px));top:calc(112px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:50%;
     border:2px solid #555;background:rgba(0,0,0,.55);color:#fff;font-size:17px;pointer-events:auto;align-items:center;justify-content:center;}
   body.touch #btnDash{display:block;}
   body.touch #btnPause2{display:flex;}
   body.touch #dashwrap{display:none;}
   #rotateHint{display:none;color:var(--gold);font-weight:700;font-size:13px;margin-top:8px;}
-  /* ---- small screens ---- */
-  @media (max-width:640px){
-    .screen{justify-content:flex-start;padding:22px 0 30px;}
-    h2.bigword{font-size:32px;}
-    .cards{flex-direction:column;gap:10px;}
-    .upcard{width:min(92vw,370px);display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;}
-    .upcard .ic{font-size:34px;}
-    .upcard .ds{min-height:0;font-size:11.5px;}
-    .upcard .nm{font-size:15px;margin-top:0;}
-    .charwrap{gap:8px;margin:10px 4px;}
-    .charcard{width:46%;min-width:148px;padding:6px 6px 8px;}
-    .charcard canvas{width:78px;height:78px;}
-    .charcard .bl{min-height:0;font-size:10.5px;}
-    #hpwrap{width:150px;}
-    #timer{font-size:23px;top:14px;}
-    #lvltxt{font-size:15px;}
-    #score{font-size:12px;top:38px;}
-    #wrow{top:40px;}
-    #bosswrap{bottom:116px;width:62vw;}
-    #toasts{top:150px;bottom:auto;right:8px;}
-    .toast{max-width:230px;padding:7px 10px;}
-    .btn{font-size:19px;padding:11px 26px;}
-    .shoprow{gap:8px;padding:8px 10px;}
-    .small{font-size:11px;}
-    body.touch #rotateHint{display:block;}
-  }
-  @media (orientation:landscape){#rotateHint{display:none !important;}}
+  /* (mobile media overrides live at the END of this stylesheet so they always win the cascade) */
   .charcard canvas{width:120px;height:120px;}
   .charcard .nm{font-family:Impact,"Arial Black",sans-serif;font-size:19px;color:var(--lime);letter-spacing:1px;}
   .charcard .bl{font-size:11.5px;color:#9ab59a;min-height:42px;margin:4px 2px;}
@@ -156,24 +130,24 @@
     text-shadow:0 4px 0 #6b4d00,0 8px 16px #000;letter-spacing:2px;animation:pop .35s ease-out;}
   @keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
   #hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
-  #hpwrap{position:absolute;left:16px;top:14px;width:240px;}
+  #hpwrap{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px));width:240px;}
   .barbk{background:#000a;outline:2px solid #000;border-radius:8px;height:20px;overflow:hidden;}
   #hpfill{height:100%;width:100%;background:linear-gradient(90deg,#ff4d4d,#ff7a4d);border-radius:8px;transition:width .15s;}
   #hptxt{position:absolute;left:0;right:0;top:1px;text-align:center;font-size:12.5px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000;}
   #xpwrap{position:absolute;left:0;right:0;top:0;height:12px;background:#000c;}
   #xpfill{height:100%;width:0%;background:linear-gradient(90deg,#54e06a,var(--lime));transition:width .1s;}
-  #lvltxt{position:absolute;right:14px;top:16px;font-family:Impact,"Arial Black",sans-serif;font-size:20px;color:var(--lime);text-shadow:0 2px 0 #000;}
-  #timer{position:absolute;left:50%;top:18px;transform:translateX(-50%);font-family:Impact,"Arial Black",sans-serif;
+  #lvltxt{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));top:calc(16px + env(safe-area-inset-top,0px));font-family:Impact,"Arial Black",sans-serif;font-size:20px;color:var(--lime);text-shadow:0 2px 0 #000;}
+  #timer{position:absolute;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-family:Impact,"Arial Black",sans-serif;
     font-size:34px;color:#fff;text-shadow:0 3px 0 #000,0 6px 12px #000;}
-  #score{position:absolute;right:14px;top:46px;text-align:right;font-weight:700;font-size:15px;color:var(--gold);text-shadow:0 2px 2px #000;}
-  #wrow{position:absolute;left:16px;top:42px;display:flex;gap:6px;}
+  #score{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));top:calc(46px + env(safe-area-inset-top,0px));text-align:right;font-weight:700;font-size:15px;color:var(--gold);text-shadow:0 2px 2px #000;}
+  #wrow{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));top:calc(42px + env(safe-area-inset-top,0px));display:flex;gap:6px;}
   .wic{background:#000a;border:2px solid #333;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
     font-size:19px;position:relative;}
   .wic span{position:absolute;bottom:-7px;right:-4px;background:var(--gold);color:#000;border-radius:6px;font-size:9.5px;font-weight:800;padding:0 3px;}
-  #dashwrap{position:absolute;left:16px;bottom:16px;width:120px;}
+  #dashwrap{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:120px;}
   #dashlab{font-size:11px;font-weight:800;color:#cfe8c0;text-shadow:0 1px 2px #000;margin-bottom:2px;}
   #dashfill{height:8px;width:100%;background:#6fd3ff;border-radius:5px;}
-  #bosswrap{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:min(560px,72vw);display:none;}
+  #bosswrap{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(560px,72vw);display:none;}
   #bossname{font-family:Impact,"Arial Black",sans-serif;color:#ff6a6a;font-size:18px;letter-spacing:1px;text-shadow:0 2px 0 #000;margin-bottom:3px;}
   #bossfill{height:100%;width:100%;background:linear-gradient(90deg,#c81e3c,#ff5d5d);border-radius:8px;}
   #banner{position:fixed;left:50%;top:26%;transform:translate(-50%,-50%) scale(0);z-index:15;text-align:center;pointer-events:none;}
@@ -223,6 +197,37 @@
   .evhint{margin-top:6px;font-size:10.5px;color:#8fb8d8;}
   .ctl{margin-top:14px;font-size:13px;color:#9ab59a;}
   #chestCard{margin:14px auto;}
+  /* ---- small screens (portrait phones) AND short screens (landscape phones) ----
+     Kept LAST so these always override the base rules above. */
+  @media (max-width:640px),(max-height:520px){
+    .screen{justify-content:flex-start;padding:22px 0 30px;}
+    h2.bigword{font-size:32px;}
+    .cards{flex-direction:column;gap:10px;}
+    .upcard{width:min(92vw,370px);display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;}
+    .upcard .ic{font-size:34px;}
+    .upcard .ds{min-height:0;font-size:11.5px;}
+    .upcard .nm{font-size:15px;margin-top:0;}
+    .charwrap{gap:8px;margin:10px 4px;}
+    .charcard{width:46%;min-width:148px;padding:6px 6px 8px;}
+    .charcard canvas{width:78px;height:78px;}
+    .charcard .bl{min-height:0;font-size:10.5px;}
+    #hpwrap{width:150px;}
+    #timer{font-size:23px;}
+    #lvltxt{font-size:15px;}
+    #score{font-size:12px;}
+    #bosswrap{bottom:calc(116px + env(safe-area-inset-bottom,0px));width:62vw;}
+    #toasts{top:150px;bottom:auto;right:8px;}
+    .toast{max-width:230px;padding:7px 10px;}
+    .btn{font-size:19px;padding:11px 26px;}
+    .btn.sm{font-size:14px;padding:7px 13px;}
+    .shoprow{gap:8px;padding:8px 10px;}
+    .small{font-size:11px;}
+    .setrow{gap:8px;}
+    .setrow input[type=range]{width:130px;}
+    #trophyRows,#almRows{max-height:52vh;}
+    body.touch #rotateHint{display:block;}
+  }
+  @media (orientation:landscape){#rotateHint{display:none !important;}}
 </style>
 </head>
 <body>
@@ -265,9 +270,9 @@
   </div>
   <div class="stats-line" id="menuStats"></div>
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
-  <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
+  <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.0 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.1 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -609,6 +614,13 @@ function bindTouch(){
 }
 bindTouch();bindCamera();
 if(matchMedia&&matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
+function touchCopy(){ // menus speak thumb, not keyboard
+  if(!document.body.classList.contains('touch'))return;
+  const c=document.getElementById('ctlLine');
+  if(c)c.innerHTML='👈 left thumb moves &nbsp;·&nbsp; 👉 right thumb looks &nbsp;·&nbsp; 💨 dash button &nbsp;·&nbsp; ⏸ pause &nbsp;·&nbsp; weapons fire themselves';
+}
+touchCopy();
+addEventListener('touchstart',touchCopy,{once:true,passive:true});
 document.addEventListener('visibilitychange',()=>{ // iOS suspends audio on tab-away
   if(!document.hidden&&AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
 });
