@@ -243,7 +243,7 @@
   <div class="stats-line" id="menuStats"></div>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.3 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.4 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -575,7 +575,7 @@ const CHARS=[
    chips:['💨 +28% speed','🧲 big pickup range','start: Bee Buddies']},
   {id:'mowbot',name:'MOWBOT',sub:'Unit 5150',blurb:'A riding mower that gained sentience during a thunderstorm. Knows only The Lawn.',
    hp:140,spd:1.08,dmg:1,cd:1,mag:1,crit:.05,armor:3,start:'darts',
-   chips:['🛡 blocks 3 dmg per hit','start: Lawn Darts'],unlock:{ach:'survivor',hint:'Survive 12:00 to unlock'}},
+   chips:['🛡 blocks 3 dmg per hit','start: Lawn Darts'],unlock:{ach:'survivor',hint:'Defeat KAREN (12:00) to unlock'}},
   {id:'raccoon',name:'TRASH PANDA',sub:'Connoisseur of Garbage',blurb:'Found a katana in the trash. It was a pool skimmer. He does not know this.',
    hp:100,spd:1.18,dmg:1.05,cd:1,mag:1.2,crit:.08,greed:1.5,start:'sand',
    chips:['🤑 +50% gold','start: Pocket Sand'],unlock:{ach:'rich',hint:'Bank 1,000 lifetime gold to unlock'}},
@@ -664,7 +664,8 @@ const ACHS={
   kills1000:{name:'THWACKALYPSE NOW',desc:'Thwack 1,000 in one run',icon:'☠️'},
   boss1:{name:'Impeached',desc:'Defeat Howard',icon:'⚖️',unlocks:'map: MIDNIGHT MOW'},
   sweep:{name:'Eviction Reversal',desc:'Defeat all 3 bosses in one run',icon:'🏆',unlocks:'map: GNOME-IN-ONE'},
-  survivor:{name:'Certified Lawn',desc:'Survive 12:00',icon:'🏡',unlocks:'character: MOWBOT'},
+  survivor:{name:'Certified Lawn',desc:'Defeat KAREN, FINAL FORM and save the lawn',icon:'🏡',unlocks:'character: MOWBOT'},
+  onestar:{name:'One-Star Review',desc:'Defeat KAREN in under 90 seconds',icon:'⭐'},
   rich:{name:'Seed Money',desc:'Bank 1,000 lifetime gold',icon:'🤑',unlocks:'character: TRASH PANDA'},
   evolved:{name:'Yard Sale Darwinism',desc:'Evolve a weapon',icon:'🧬'},
   maxed:{name:'Fully Torqued',desc:'Max any weapon to Lv5',icon:'⭐'},
@@ -675,6 +676,10 @@ const ACHS={
 };
 const INSPECTOR={id:'inspector',name:'THE INSPECTOR',hp:42000,spd:86,dmg:55,r:50,
   sub:'your lawn\'s final audit. he has questions.'};
+const KAREN={id:'karen',name:'KAREN, FINAL FORM',hp:30000,spd:62,dmg:34,r:46,
+  sub:'she has been asked to leave. she has declined.'};
+const KAREN_LINES=['I\'M CALLING THE POLICE','DO YOU HAVE A PERMIT?','I KNOW THE MAYOR',
+  'THIS IS GOING ON NEXTDOOR','I WANT YOUR NAME','UNBELIEVABLE.','MY HUSBAND IS A LAWYER'];
 function ach(id){
   if(SAVE.ach[id])return;SAVE.ach[id]=true;persist();
   const A=ACHS[id];if(!A)return;
@@ -765,6 +770,7 @@ function newRun(charId){
     kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,boss:null,dying:false,
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
+    karenSpawned:false,karenT:0,karenDeadT:0,
     mowplus:!!(SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
   setPlayerModel(charId);
   for(let i=0;i<5;i++){const a=i/5*TAU+rand(.5); // a few greeters so the run opens hot
@@ -833,8 +839,12 @@ function killEnemy(e){
     if(e.type==='hoa')ach('boss1');
     if(e.type==='inspector'){ach('auditor');G.gold+=500;
       popText(e.x,e.y,'AUDIT PASSED. +500g','#ffd23e',22,90);}
-    G.bossesRun.push(e.type);
-    if(new Set(G.bossesRun).size>=3&&e.type!=='inspector')ach('sweep');
+    if(e.type==='karen'){
+      G.karenDeadT=G.t;
+      if(G.t-G.karenT<90)ach('onestar');
+    }
+    if(['hoa','landlord','gentri'].includes(e.type))G.bossesRun.push(e.type);
+    if(new Set(G.bossesRun).size>=3)ach('sweep');
     for(let i=0;i<10;i++)gems.push(gem(e.x+rand(-50,50),e.y+rand(-50,50),10));
     for(let i=0;i<12;i++)coins.push({x:e.x+rand(-70,70),y:e.y+rand(-70,70),v:5});
     pickups.push({x:e.x,y:e.y,kind:'chest',big:true});
@@ -1148,7 +1158,7 @@ function spawnEnemy(type,x,y){
   return enemies[enemies.length-1];
 }
 function spawnBoss(def){
-  const m=1+G.t/900;
+  const m=(1+G.t/900)*(G.mowplus?1.5:1);
   const a=rand(TAU),dist=SPAWN_R;
   const b={id:uidc++,type:def.id,name:def.name,x:P.x+Math.cos(a)*dist,y:P.y+Math.sin(a)*dist,
     hp:def.hp*m,maxHp:def.hp*m,spd:def.spd,dmg:def.dmg,r:def.r,xp:0,col:'#c33',gold:1,
@@ -1158,9 +1168,19 @@ function spawnBoss(def){
   banner('⚠ '+def.name,def.sub);
   return b;
 }
+function spawnKaren(){
+  G.karenSpawned=true;G.karenT=G.t;
+  // the lawn falls silent: convert the rabble into a parting gift of gems
+  for(const e of enemies)if(!e.boss&&!e.elite&&!e.dead)killEnemy(e);
+  G.shake=14;
+  const b=spawnBoss(KAREN);
+  b.aiT=2.5;b.atk=0;b.voiceT=3;
+  return b;
+}
 function director(dt){
   let ph=PHASES[0];for(const p of PHASES)if(G.t>=p.t)ph=p;
-  let rate=ph.rate*(1+Math.max(0,G.t-720)/240)*(G.mowplus?1.25:1);
+  let rate=ph.rate*(1+Math.max(0,G.t-720)/240)*(G.mowplus?1.25:1)
+    *(G.karenSpawned&&!G.won?0.35:1); // thin the crowd for the finale
   G.spawnAcc+=rate*dt;
   while(G.spawnAcc>=1){G.spawnAcc--;
     if(enemies.length<330)spawnEnemy(wpick(ph.mix));}
@@ -1175,21 +1195,23 @@ function director(dt){
   if(G.t>=G.nextElite){G.nextElite+=75;
     spawnEnemy('patricia');banner('📋 PATRICIA HAS FILED A COMPLAINT','elite spotted — she drops a chest');}
   if(G.bossIdx<BOSSES.length&&G.t>=BOSSES[G.bossIdx].at)spawnBoss(BOSSES[G.bossIdx++]);
-  if(G.t>720&&!G.boss){G.endlessBossT-=dt;
+  if(!G.karenSpawned&&G.t>=720)spawnKaren(); // the final complaint
+  if(G.karenDeadT&&!G.won&&G.t-G.karenDeadT>1.3)winScreen();
+  if(G.won&&G.t>720&&!G.boss){G.endlessBossT-=dt;
     if(G.endlessBossT<=0){G.endlessBossT=150;spawnBoss(choice(BOSSES));}}
-  if(G.t>=G.inspectorT){ // the audit cannot be rescheduled
+  if(G.won&&G.t>=G.inspectorT){ // the audit cannot be rescheduled
     G.inspectorT+=300;
     const b=spawnBoss({...INSPECTOR,hp:INSPECTOR.hp*G.inspectorMult});
     G.inspectorMult*=3;b.aiT=4;}
-  if(!G.won&&G.t>=720){G.won=true;winScreen();}
 }
 function winScreen(){
+  G.won=true;
   ach('survivor');SAVE.stats.wins++;
   SAVE.mowWins[MAP.id]=true;
   if(G.mowplus)ach('overgrown');
   bankGold();if(G.t>SAVE.best){SAVE.best=G.t;persist();}
   AU.win();
-  $('winStats').innerHTML=`You survived <b>12:00</b>${G.mowplus?' on <b style="color:#ff7a3c">MOW+</b>':''}. The HOA has disbanded.<br>
+  $('winStats').innerHTML=`You defeated <b>KAREN, FINAL FORM</b>${G.mowplus?' on <b style="color:#ff7a3c">MOW+</b>':''}. The lawn is finally quiet.<br>
     💀 <b>${G.kills}</b> thwacked · 🪙 <b>${G.gold}</b> banked · Level <b>${P.lvl}</b>`+weaponStatsHtml();
   show('scrWin');G.state='won';
 }
@@ -1305,6 +1327,41 @@ function update(dt){
         e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
         if(e.aiT<=0){e.aiT=7;popText(e.x,e.y,'RENT\'S DUE','#9f6',18,e.r*2+30);
           for(let k=0;k<4;k++)spawnEnemy('gnome',e.x+rand(-70,70),e.y+rand(-70,70));}
+      }else if(e.type==='karen'){
+        const frac=e.hp/e.maxHp,phase=frac>.6?1:frac>.3?2:3;
+        const spdMul=phase===3?1.5:phase===2?1.2:1;
+        if(L>800){ // she WILL speak to you
+          spray(e.x,e.y,12,'#c0392b',200);
+          const a2=rand(TAU);e.x=P.x+Math.cos(a2)*520;e.y=P.y+Math.sin(a2)*520;
+          spray(e.x,e.y,12,'#c0392b',200);AU.bossCry();
+          popText(e.x,e.y,'WE\'RE NOT DONE','#ff6a6a',20,e.r*2+30);}
+        if(e.chargeT>0){e.chargeT-=dt;e.x+=e.cdx*430*dt;e.y+=e.cdy*430*dt;}
+        else{e.x+=dx/L*e.spd*spdMul*slow*dt;e.y+=dy/L*e.spd*spdMul*slow*dt;}
+        if(e.aiT<=0){
+          e.aiT=phase===1?3:phase===2?2.6:2.1;
+          e.atk=(e.atk||0)+1;
+          if(phase>=3&&e.atk%3===0){ // MANAGER VOICE: radial scream
+            for(let k=0;k<16;k++){const a=k/16*TAU+G.t;
+              ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*175,vy:Math.sin(a)*175,r:7,dmg:16,life:6});}
+            popText(e.x,e.y,'MANAGER VOICE','#ff6a6a',20,e.r*2+30);
+            AU.tone(300,90,.4,'sawtooth',.3);
+          }else if(phase>=2&&e.atk%3===1&&enemies.filter(x=>x.elite).length<5){
+            for(let k=0;k<2;k++)spawnEnemy('patricia',e.x+rand(-90,90),e.y+rand(-90,90));
+            popText(e.x,e.y,'HOA, ASSEMBLE!','#fc6',19,e.r*2+30);AU.bossCry();
+          }else{ // complaint barrage: aimed fan
+            const base=Math.atan2(P.y-e.y,P.x-e.x);
+            for(let k=0;k<5;k++){const a=base+(k-2)*.22;
+              ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*205,vy:Math.sin(a)*205,r:7,dmg:18,life:5});}
+            AU.tone(240,120,.2,'square',.2);
+          }
+          if(phase===3&&e.atk%4===2){e.chargeT=.8;
+            const LL=Math.hypot(P.x-e.x,P.y-e.y)||1;
+            e.cdx=(P.x-e.x)/LL;e.cdy=(P.y-e.y)/LL;
+            popText(e.x,e.y,'I AM THE MANAGER','#ff6a6a',21,e.r*2+30);}
+        }
+        e.voiceT=(e.voiceT??6)-dt;
+        if(e.voiceT<=0){e.voiceT=7;
+          popText(e.x,e.y,choice(KAREN_LINES),'#ffb0b0',16,e.r*2+48);}
       }else if(e.type==='inspector'){
         e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
         if(L>720){ // you cannot outrun paperwork
@@ -1850,6 +1907,28 @@ function buildBoss(type){
     const bc=new THREE.Mesh(mergeParts(bp),MAT);
     bc.position.set(22,16,0);g.add(bc);g.userData.briefcase=bc;
     g.scale.setScalar(2.1);
+  }else if(type==='karen'){
+    // power blazer, asymmetric bob, phone out and recording
+    P_(p,B(8,11,8),'#26262e',-5,5.5,0);P_(p,B(8,11,8),'#26262e',5,5.5,0);
+    P_(p,B(26,26,14),'#c0392b',0,26,0);
+    P_(p,B(6,10,3),'#f2f2f2',0,34,7.2);
+    P_(p,S(1.6,5,4),'#ffd23e',0,30,7.6);P_(p,S(1.6,5,4),'#ffd23e',0,25,7.6);
+    P_(p,B(6,16,7),'#c0392b',-16,28,0);
+    P_(p,B(6,16,7),'#c0392b',16,33,2,{rz:-.7});
+    P_(p,S(9.5,8,6),'#eec39a',0,49,0);
+    P_(p,B(21,9,15),'#e8c84a',0,56,0,{rz:.14});   // the wedge
+    P_(p,B(10,12,14),'#e8c84a',-7,49,-1,{rz:.1});
+    P_(p,B(8,16,13),'#e8c84a',-9,44,-2);           // the long side
+    P_(p,B(17,3,4),'#1b1b22',0,60,4,{rz:.14});     // sunglasses, parked
+    P_(p,B(6,1.8,2),'#26262e',-4,53,8,{rz:-.4});P_(p,B(6,1.8,2),'#26262e',4,53,8,{rz:.4});
+    P_(p,S(1.4,4,3),'#26262e',-3.5,51.5,8.6);P_(p,S(1.4,4,3),'#26262e',3.5,51.5,8.6);
+    P_(p,S(1.8,5,4),'#f5f0e6',-4,40,7.4);P_(p,S(1.8,5,4),'#f5f0e6',0,39,7.8);P_(p,S(1.8,5,4),'#f5f0e6',4,40,7.4);
+    g.add(new THREE.Mesh(mergeParts(p),MAT));
+    const ph=[];P_(ph,B(4.5,8,1.2),'#1b1b22',0,0,0);P_(ph,S(.9,4,3),'#6fd3ff',0,2.5,.9);
+    const phone=new THREE.Mesh(mergeParts(ph),MAT);
+    phone.position.set(21,44,4);phone.rotation.z=-.3;
+    g.add(phone);g.userData.phone=phone;
+    g.scale.setScalar(2.8);
   }else if(type==='inspector'){
     suitParts(p,'#16161c','#c81e3c');
     P_(p,B(17,4,2.5),'#000000',0,50,8);             // the sunglasses
@@ -2033,6 +2112,7 @@ function render3d(){
       node.position.set(e.x,0,e.y);
       node.rotation.y=Math.atan2(P.x-e.x,P.y-e.y);
       if(node.userData.gavel)node.userData.gavel.rotation.z=e.chargeT>0?Math.sin(t*30)*.7:Math.sin(t*4)*.2;
+      if(node.userData.phone)node.userData.phone.position.y=44+Math.sin(t*3.2)*2.5; // still recording
       if(node.userData.briefcase)node.userData.briefcase.rotation.x=Math.sin(t*3)*.2;
       if(node.userData.visor)node.userData.visor.position.x=Math.sin(t*3)*7;
       if(sn<760){put(shadowPool,sn++, e.x,.9,e.y,0,0,0,e.r*1.5,1,e.r*1.5);}

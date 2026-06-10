@@ -11,7 +11,8 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 - 7 playable defenders (2 unlockable) — Gerald the Lawn Dad, Babushka, DJ Gobbo, Capt. Briney, Moth Lad, MOWBOT, and TRASH PANDA
 - 10 weapons × 5 levels, each with a **unique evolution** (BRUNCHNADO, MURDER HORNETS, DROP THE SUN, CATEGORY 5, GNOME LEGION…) — including deployable golden gnome turrets and a knockback leaf blower
 - **MOW+ hard mode** per map (win it once to unlock), kill-combo counter, **Second Wind** revive in the shop, per-character best times
-- 8 passives, 8 enemy types, 3 bosses, horde events, elite chests
+- 8 passives, 8 enemy types, 3 staged bosses, horde events, elite chests
+- **KAREN, FINAL FORM** — the true final boss at 12:00: three phases, complaint barrages, HOA summons, manager-voice screams, and she teleports if you try to walk away. Victory means evicting her.
 - 3 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One
 - 12 achievements with a trophies gallery, permanent meta shop, persistent saves
 - **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
