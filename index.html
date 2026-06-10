@@ -262,7 +262,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.8 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.9 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -605,27 +605,34 @@ if('serviceWorker' in navigator&&!['localhost','127.0.0.1'].includes(location.ho
 
 /* ============================== DATA ============================== */
 const CHARS=[
-  {id:'gerald',name:'GERALD',sub:'Lawn Dad',blurb:'Has a grill, a hose, and absolutely zero chill about the lawn.',
+  {id:'gerald',name:'GERALD',sub:'Lawn Dad',em:'🧑‍🌾',blurb:'Has a grill, a hose, and absolutely zero chill about the lawn.',
    hp:120,spd:1,dmg:1.15,cd:1,mag:1,crit:.05,start:'spatula',
-   chips:['🍖 +15% damage','start: Spatula Cyclone']},
-  {id:'babushka',name:'BABUSHKA',sub:'Slipper Sniper',blurb:'Survived three regimes and one HOA. The slipper never misses.',
+   dashKind:'flame',dash:'🔥 dash leaves a burning grill trail',
+   chips:['🍖 +15% damage','🔥 dash: grill trail','start: Spatula Cyclone']},
+  {id:'babushka',name:'BABUSHKA',sub:'Slipper Sniper',em:'🧓',blurb:'Survived three regimes and one HOA. The slipper never misses.',
    hp:170,spd:.85,dmg:1.3,cd:1.05,mag:1,crit:.05,start:'chancla',
-   chips:['❤️ 170 HP','🐢 a bit slow','start: La Chancla']},
-  {id:'gobbo',name:'DJ GOBBO',sub:'Goblin of Bass',blurb:'Banned from 14 venues for "excessive wub". The lawn is his stage now.',
+   dashKind:'ram',dash:'💪 dash shoulder-checks everything in the way',
+   chips:['❤️ 170 HP','💪 dash: shoulder check','start: La Chancla']},
+  {id:'gobbo',name:'DJ GOBBO',sub:'Goblin of Bass',em:'🎧',blurb:'Banned from 14 venues for "excessive wub". The lawn is his stage now.',
    hp:95,spd:1.05,dmg:.95,cd:.78,mag:1,crit:.05,start:'bass',
-   chips:['⚡ +22% attack speed','start: Bass Cannon']},
-  {id:'briney',name:'CAPT. BRINEY',sub:'Pickle of the Seven Seas',blurb:'A pickle with a past. Crunchy outside, saltier inside.',
+   dashKind:'pulse',dash:'🔊 dash ends with a mini bass drop',
+   chips:['⚡ +22% attack speed','🔊 dash: drop step','start: Bass Cannon']},
+  {id:'briney',name:'CAPT. BRINEY',sub:'Pickle of the Seven Seas',em:'🥒',blurb:'A pickle with a past. Crunchy outside, saltier inside.',
    hp:105,spd:1,dmg:1,cd:1,mag:1,crit:.22,start:'sprinkler',
-   chips:['🎯 +17% crit','start: Sprinkler']},
-  {id:'mothlad',name:'MOTH LAD',sub:'Friend of Lamps',blurb:'Fragile. Fast. Will absolutely leave mid-fight if he sees a porch light.',
+   dashKind:'brine',dash:'🧂 dash leaves a slowing brine wake',
+   chips:['🎯 +17% crit','🧂 dash: brine wake','start: Sprinkler']},
+  {id:'mothlad',name:'MOTH LAD',sub:'Friend of Lamps',em:'🦋',blurb:'Fragile. Fast. Will absolutely leave mid-fight if he sees a porch light.',
    hp:80,spd:1.28,dmg:.9,cd:.95,mag:1.7,crit:.08,start:'bees',
-   chips:['💨 +28% speed','🧲 big pickup range','start: Bee Buddies']},
-  {id:'mowbot',name:'MOWBOT',sub:'Unit 5150',blurb:'A riding mower that gained sentience during a thunderstorm. Knows only The Lawn.',
+   dashKind:'flutter',dash:'🪽 longer dash, shorter cooldown',
+   chips:['💨 +28% speed','🪽 dash: extended flutter','start: Bee Buddies']},
+  {id:'mowbot',name:'MOWBOT',sub:'Unit 5150',em:'🚜',blurb:'A riding mower that gained sentience during a thunderstorm. Knows only The Lawn.',
    hp:140,spd:1.08,dmg:1,cd:1,mag:1,crit:.05,armor:3,start:'darts',
-   chips:['🛡 blocks 3 dmg per hit','start: Lawn Darts'],unlock:{ach:'survivor',hint:'Defeat KAREN (12:00) to unlock'}},
-  {id:'raccoon',name:'TRASH PANDA',sub:'Connoisseur of Garbage',blurb:'Found a katana in the trash. It was a pool skimmer. He does not know this.',
+   dashKind:'mow',dash:'🚜 dash mows everything it touches',
+   chips:['🛡 blocks 3 dmg per hit','🚜 dash: mows','start: Lawn Darts'],unlock:{ach:'survivor',hint:'Defeat KAREN (12:00) to unlock'}},
+  {id:'raccoon',name:'TRASH PANDA',sub:'Connoisseur of Garbage',em:'🦝',blurb:'Found a katana in the trash. It was a pool skimmer. He does not know this.',
    hp:100,spd:1.18,dmg:1.05,cd:1,mag:1.2,crit:.08,greed:1.5,start:'sand',
-   chips:['🤑 +50% gold','start: Pocket Sand'],unlock:{ach:'rich',hint:'Bank 1,000 lifetime gold to unlock'}},
+   dashKind:'steal',dash:'💰 dash pickpockets coins from enemies',
+   chips:['🤑 +50% gold','💰 dash: pickpockets','start: Pocket Sand'],unlock:{ach:'rich',hint:'Bank 1,000 lifetime gold to unlock'}},
 ];
 
 const WEAPONS={
@@ -815,7 +822,7 @@ let MAP=MAPS[0];
 const G={state:'menu',t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
   kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,dying:false};
 let P=null;
-let enemies=[],bullets=[],ebullets=[],gems=[],coins=[],pickups=[],parts=[],texts=[],rings=[],bees=[],pets=[];
+let enemies=[],bullets=[],ebullets=[],gems=[],coins=[],pickups=[],parts=[],texts=[],rings=[],bees=[],pets=[],zones=[];
 let grid=new Map();
 let uidc=1;
 
@@ -837,7 +844,7 @@ function newRun(charId){
   addWeapon(c.start);
   recompute();P.hp=P.stats.maxHp;
   P.pend+=SAVE.upg.start||0; // Head Start: free picks before the first gnome arrives
-  enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];
+  enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];zones=[];
   Object.assign(G,{t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
     kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,boss:null,dying:false,
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
@@ -1227,6 +1234,25 @@ function tickWeapons(dt){
   }
 }
 
+/* per-character dash signatures */
+function dashSignature(dt){
+  const k=P.char.dashKind;
+  if(k==='flame'||k==='brine'){
+    P.zoneDropT-=dt;
+    if(P.zoneDropT<=0){P.zoneDropT=.06;
+      if(zones.length<26)zones.push({x:P.x,y:P.y,kind:k,
+        life:k==='flame'?1.8:2.2,tick:.12});}
+  }else if(k==='ram'||k==='mow'||k==='steal'){
+    forNear(P.x,P.y,36,e=>{
+      if(P.dashHits[e.id])return;P.dashHits[e.id]=1;
+      if(k==='ram')hitEnemy(e,30,{fx:P.x,fy:P.y,kb:330,src:'dash'});
+      else if(k==='mow'){hitEnemy(e,45,{fx:P.x,fy:P.y,kb:260,src:'dash'});
+        spray(e.x,e.y,4,'#71f24c',160);}
+      else{hitEnemy(e,15,{fx:P.x,fy:P.y,kb:200,src:'dash'});
+        if(P.stealN<5){P.stealN++;coins.push({x:e.x,y:e.y,v:1});}}
+    });
+  }
+}
 /* ============================== SPATIAL GRID ============================== */
 const CELL=56;
 function buildGrid(){
@@ -1331,8 +1357,9 @@ function winScreen(){
   show('scrWin');G.state='won';
 }
 function weaponStatsHtml(){
-  const rows=P.weapons.map(w=>({n:wName(w),i:wIcon(w),d:P.dmgBy[w.id]||0}))
-    .sort((a,b)=>b.d-a.d);
+  const rows=P.weapons.map(w=>({n:wName(w),i:wIcon(w),d:P.dmgBy[w.id]||0}));
+  if(P.dmgBy.dash)rows.push({n:'Dash Signature',i:'💨',d:P.dmgBy.dash});
+  rows.sort((a,b)=>b.d-a.d);
   const max=Math.max(1,...rows.map(r=>r.d));
   return '<div style="margin-top:10px;font-size:12.5px;text-align:left;display:inline-block">'+rows.map(r=>
     `<div style="display:flex;align-items:center;gap:6px;margin:2px 0">
@@ -1367,10 +1394,19 @@ function update(dt){
     if(G.heartT<=0){G.heartT=.85;AU.heart();
       $('redflash').style.opacity=.5;setTimeout(()=>{if(G.state==='play')$('redflash').style.opacity=0;},250);}
   }
-  if((keys[' ']||keys.shift||GP.dash||TOUCH.dash)&&P.dashCd<=0&&P.moving){P.dashT=.22;P.dashCd=2.2;AU.dash();}
+  if((keys[' ']||keys.shift||GP.dash||TOUCH.dash)&&P.dashCd<=0&&P.moving){
+    const fl=P.char.dashKind==='flutter';
+    P.dashT=fl?.34:.22;P.dashCdMax=fl?1.7:2.2;P.dashCd=P.dashCdMax;
+    P.dashHits={};P.stealN=0;P.zoneDropT=0;AU.dash();}
   let spd=P.stats.spd;
+  const wasDashing=P.dashT>0;
   if(P.dashT>0){P.dashT-=dt;spd*=3.4;
-    parts.push({x:P.x,y:P.y,h:16,vx:0,vz:0,vh:0,life:.25,max:.25,col:'#cfe8c0',sz:7,rx:rand(TAU),ry:rand(TAU),bounced:true});}
+    parts.push({x:P.x,y:P.y,h:16,vx:0,vz:0,vh:0,life:.25,max:.25,col:'#cfe8c0',sz:7,rx:rand(TAU),ry:rand(TAU),bounced:true});
+    dashSignature(dt);}
+  if(wasDashing&&P.dashT<=0&&P.char.dashKind==='pulse'){ // gobbo: the drop
+    rings.push({x:P.x,y:P.y,r:10,max:95,life:.35});
+    AU.tone(80,38,.22,'sawtooth',.22);G.shake=Math.min(G.shake+2,8);
+    forNear(P.x,P.y,95,e=>hitEnemy(e,14,{fx:P.x,fy:P.y,kb:230,src:'dash'}));}
   P.x+=mx*spd*dt;P.y+=my*spd*dt;
 
   buildGrid();
@@ -1552,6 +1588,21 @@ function update(dt){
 
   for(let i=pets.length-1;i>=0;i--){const p=pets[i];p.t-=dt;
     if(p.t<=0){spray(p.x,p.y,6,'#ffd23e',120);pets.splice(i,1);}}
+  for(let i=zones.length-1;i>=0;i--){const z=zones[i];z.life-=dt;
+    if(z.kind==='flame'){
+      z.tick-=dt;
+      if(z.tick<=0){z.tick=.45;
+        forNear(z.x,z.y,44,e=>hitEnemy(e,9,{fx:z.x,fy:z.y,kb:40,src:'dash'}));}
+      if(parts.length<440&&RNG()<.45)parts.push({x:z.x+rand(-14,14),y:z.y+rand(-14,14),
+        h:5,vx:0,vz:0,vh:rand(35,80),life:.4,max:.4,
+        col:RNG()<.5?'#ff7a3c':'#ffd23e',sz:4,rx:rand(TAU),ry:rand(TAU),bounced:true});
+    }else{ // brine
+      forNear(z.x,z.y,46,e=>{e.slowT=Math.max(e.slowT||0,.5);});
+      if(parts.length<440&&RNG()<.22)parts.push({x:z.x+rand(-16,16),y:z.y+rand(-16,16),
+        h:3,vx:0,vz:0,vh:rand(12,35),life:.5,max:.5,
+        col:'#6fd3ff',sz:3,rx:rand(TAU),ry:rand(TAU),bounced:true});
+    }
+    if(z.life<=0)zones.splice(i,1);}
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;
     p.x+=p.vx*dt;p.y+=p.vz*dt;p.h+=p.vh*dt;p.vh-=520*dt;p.rx+=dt*6;p.ry+=dt*7;
     if(p.h<2&&p.vh<0){
@@ -1573,7 +1624,7 @@ let hudT=0;
 function updateHud(){
   $('hpfill').style.width=(P.hp/P.stats.maxHp*100)+'%';
   $('xpfill').style.width=(P.xp/P.xpNext*100)+'%';
-  $('dashfill').style.width=clamp((1-P.dashCd/2.2)*100,0,100)+'%';
+  $('dashfill').style.width=clamp((1-P.dashCd/(P.dashCdMax||2.2))*100,0,100)+'%';
   $('dashfill').style.background=P.dashCd<=0?'#6fd3ff':'#39637a';
   $('btnDash').classList.toggle('cd',P.dashCd>0);
   if(G.boss&&!G.boss.dead){$('bosswrap').style.display='block';
@@ -2173,7 +2224,7 @@ const menuActors=[];
 for(let i=0;i<12;i++)menuActors.push({x:rand(-520,520),y:rand(-520,520),
   tx:rand(-520,520),ty:rand(-520,520),ph:rand(TAU)});
 function clearWorld(){
-  enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];
+  enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];zones=[];
   for(const id in bossNodes){scene.remove(bossNodes[id]);delete bossNodes[id];}
 }
 /* ---------- main 3D render ---------- */
@@ -2578,6 +2629,11 @@ function buildAlmanac(){
   h+=almRow('💨','Dash through danger','Dashing grants brief invincibility. Use it to pass through crowds and bullets.',false);
   h+=almRow('🧬','Evolve your weapons','Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.',false);
   h+=almRow('🪙','Gold is forever','Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.',false);
+  h+='<div class="almHead">DEFENDERS <small>each one dashes differently</small></div>';
+  for(const c of CHARS){
+    const locked=!!(c.unlock&&!SAVE.ach[c.unlock.ach]);
+    h+=almRow(c.em,c.name+' — '+c.sub,locked?c.unlock.hint:(c.blurb+'<br>'+c.dash),locked);
+  }
   h+='<div class="almHead">ARSENAL <small>discovered by using each weapon</small></div>';
   for(const id in WEAPONS){
     const seen=!!S['w_'+id],evoSeen=!!S['v_'+id],E=EVO[id];

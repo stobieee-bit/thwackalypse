@@ -8,7 +8,7 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 
 ## Features
 
-- 7 playable defenders (2 unlockable) — Gerald the Lawn Dad, Babushka, DJ Gobbo, Capt. Briney, Moth Lad, MOWBOT, and TRASH PANDA
+- 7 playable defenders (2 unlockable), each with a **signature dash**: Gerald's burning grill trail, Babushka's shoulder check, DJ Gobbo's bass-drop landing, Briney's slowing brine wake, Moth Lad's extended flutter, MOWBOT's mowing charge, and Trash Panda's mid-dash pickpocketing
 - 10 weapons × 5 levels, each with a **unique evolution** (BRUNCHNADO, MURDER HORNETS, DROP THE SUN, CATEGORY 5, GNOME LEGION…) — including deployable golden gnome turrets and a knockback leaf blower
 - **MOW+ hard mode** per map (win it once to unlock), kill-combo counter, **Second Wind** revive in the shop, per-character best times
 - 8 passives, 8 enemy types, 3 staged bosses, horde events, elite chests
