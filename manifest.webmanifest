@@ -1,0 +1,14 @@
+{
+  "name": "THWACKALYPSE 64",
+  "short_name": "THWACK64",
+  "description": "A 100% legally distinct low-poly bullet heaven. Defend your lawn.",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0c120c",
+  "theme_color": "#0c120c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

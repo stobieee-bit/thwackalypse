@@ -16,6 +16,11 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩴</text></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta property="og:image" content="https://stobieee-bit.github.io/thwackalypse/social.jpg">
+<meta property="og:url" content="https://stobieee-bit.github.io/thwackalypse/">
+<meta name="twitter:card" content="summary_large_image">
 <title>THWACKALYPSE 64 🩴</title>
 <style>
   :root{
@@ -72,6 +77,15 @@
   .setrow .sv{width:46px;color:var(--gold);font-weight:800;}
   .setrow input[type=range]{width:170px;accent-color:#9fff4a;}
   .btn.mini{font-size:15px;padding:7px 18px;margin:0;width:90px;}
+  #trophyRows{display:flex;flex-direction:column;gap:6px;max-height:56vh;overflow-y:auto;padding:0 8px;}
+  .trow{display:flex;gap:12px;align-items:center;background:#141d12;border:2px solid #2c3f24;border-radius:12px;
+    padding:8px 16px;width:min(480px,92vw);text-align:left;}
+  .trow.got{border-color:var(--gold);}
+  .trow.lock{opacity:.55;}
+  .trow .ti{font-size:26px;width:32px;text-align:center;}
+  .trow .tn{font-family:Impact,"Arial Black",sans-serif;font-size:14px;color:#fff;letter-spacing:.5px;}
+  .trow.got .tn{color:var(--gold);}
+  .trow .td{font-size:11.5px;color:#9ab59a;}
   /* ---- touch controls ---- */
   #joy{position:fixed;z-index:9;pointer-events:none;display:none;}
   #joyRing{position:absolute;width:108px;height:108px;border:3px solid rgba(255,255,255,.35);border-radius:50%;
@@ -223,12 +237,13 @@
   <div style="margin-top:18px">
     <button class="btn" id="bPlay">PLAY</button>
     <button class="btn gold" id="bShop">LAWN SHOP</button>
+    <button class="btn alt" id="bTrophies">TROPHIES</button>
     <button class="btn alt" id="bSettings">SETTINGS</button>
   </div>
   <div class="stats-line" id="menuStats"></div>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.1 · now with full 360° camera · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.2 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -257,6 +272,13 @@
   <button class="btn" id="bChestOk">NICE</button>
 </div>
 
+<div id="scrTrophies" class="screen hide">
+  <h2 class="bigword">TROPHIES</h2>
+  <div id="trophyRows"></div>
+  <div id="lifeStats" class="small" style="font-size:13px;margin-top:10px"></div>
+  <button class="btn alt" id="bBack4">BACK</button>
+</div>
+
 <div id="scrSettings" class="screen hide">
   <h2 class="bigword">SETTINGS</h2>
   <div class="setrow"><span class="sl">🎵 Music</span><input type="range" id="sMusic" min="0" max="100"><span class="sv" id="sMusicV"></span></div>
@@ -265,6 +287,7 @@
   <div class="setrow"><span class="sl">📺 CRT filter</span><button class="btn mini" id="sCrt"></button></div>
   <div class="setrow"><span class="sl">🔢 Damage numbers</span><button class="btn mini" id="sDmg"></button></div>
   <div class="setrow"><span class="sl">🎥 Camera speed</span><input type="range" id="sSens" min="40" max="200"><span class="sv" id="sSensV"></span></div>
+  <div class="setrow"><span class="sl">🖥 Sharpness</span><button class="btn mini" id="sRes"></button></div>
   <button class="btn alt" id="bBack3" style="margin-top:14px">BACK</button>
 </div>
 
@@ -272,6 +295,7 @@
   <h2 class="bigword">PAUSED</h2>
   <div id="pauseBuild" class="small" style="font-size:14px"></div>
   <button class="btn" id="bResume">RESUME</button>
+  <button class="btn alt" id="bSettings2">SETTINGS</button>
   <button class="btn alt" id="bMute">MUTE: OFF</button>
   <button class="btn alt" id="bQuit">ABANDON LAWN</button>
 </div>
@@ -309,7 +333,7 @@ const $=id=>document.getElementById(id);
 
 /* ============================== SAVE ============================== */
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0},ach:{},lastMap:'lawn',
-  settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1},
+  settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
 try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
@@ -373,7 +397,7 @@ const AU={
   sched(){
     if(!this.ctx)return;
     const inRun=['play','levelup','chest','pause'].includes(G.state);
-    const inMenu=['menu','select','shop','settings'].includes(G.state);
+    const inMenu=['menu','select','shop','settings','trophies'].includes(G.state);
     const musicOn=!this.muted&&(inRun||inMenu);
     const spb=60/138/4;
     if(this.nextT<this.ctx.currentTime)this.nextT=this.ctx.currentTime+.05;
@@ -519,6 +543,12 @@ function bindTouch(){
 }
 bindTouch();bindCamera();
 if(matchMedia&&matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
+document.addEventListener('visibilitychange',()=>{ // iOS suspends audio on tab-away
+  if(!document.hidden&&AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
+});
+if('serviceWorker' in navigator&&!['localhost','127.0.0.1'].includes(location.hostname)){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 
 /* ============================== DATA ============================== */
 const CHARS=[
@@ -622,7 +652,10 @@ const ACHS={
   maxed:{name:'Fully Torqued',desc:'Max any weapon to Lv5',icon:'⭐'},
   fullhouse:{name:'Full Shed',desc:'Fill all 10 slots',icon:'🧰'},
   untouched:{name:'Can\'t Touch Grass',desc:'Take no damage before 5:00',icon:'🛡️'},
+  auditor:{name:'Passed the Audit',desc:'Defeat THE INSPECTOR (endless, 15:00+)',icon:'🕴️'},
 };
+const INSPECTOR={id:'inspector',name:'THE INSPECTOR',hp:42000,spd:86,dmg:55,r:50,
+  sub:'your lawn\'s final audit. he has questions.'};
 function ach(id){
   if(SAVE.ach[id])return;SAVE.ach[id]=true;persist();
   const A=ACHS[id];if(!A)return;
@@ -709,7 +742,7 @@ function newRun(charId){
   enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];
   Object.assign(G,{t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
     kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,boss:null,dying:false,
-    dmgTakenRun:0,unt300:false,bossesRun:[]});
+    dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1});
   setPlayerModel(charId);
   for(let i=0;i<5;i++){const a=i/5*TAU+rand(.5); // a few greeters so the run opens hot
     spawnEnemy('gnome',Math.cos(a)*rand(260,340),Math.sin(a)*rand(260,340));}
@@ -770,8 +803,10 @@ function killEnemy(e){
   if(e.boss){
     G.shake=18;G.ts=.25;AU.boom();AU.chest();G.boss=null;
     if(e.type==='hoa')ach('boss1');
+    if(e.type==='inspector'){ach('auditor');G.gold+=500;
+      popText(e.x,e.y,'AUDIT PASSED. +500g','#ffd23e',22,90);}
     G.bossesRun.push(e.type);
-    if(new Set(G.bossesRun).size>=3)ach('sweep');
+    if(new Set(G.bossesRun).size>=3&&e.type!=='inspector')ach('sweep');
     for(let i=0;i<10;i++)gems.push(gem(e.x+rand(-50,50),e.y+rand(-50,50),10));
     for(let i=0;i<12;i++)coins.push({x:e.x+rand(-70,70),y:e.y+rand(-70,70),v:5});
     pickups.push({x:e.x,y:e.y,kind:'chest',big:true});
@@ -1075,6 +1110,10 @@ function director(dt){
   if(G.bossIdx<BOSSES.length&&G.t>=BOSSES[G.bossIdx].at)spawnBoss(BOSSES[G.bossIdx++]);
   if(G.t>720&&!G.boss){G.endlessBossT-=dt;
     if(G.endlessBossT<=0){G.endlessBossT=150;spawnBoss(choice(BOSSES));}}
+  if(G.t>=G.inspectorT){ // the audit cannot be rescheduled
+    G.inspectorT+=300;
+    const b=spawnBoss({...INSPECTOR,hp:INSPECTOR.hp*G.inspectorMult});
+    G.inspectorMult*=3;b.aiT=4;}
   if(!G.won&&G.t>=720){G.won=true;winScreen();}
 }
 function winScreen(){
@@ -1196,6 +1235,17 @@ function update(dt){
         e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
         if(e.aiT<=0){e.aiT=7;popText(e.x,e.y,'RENT\'S DUE','#9f6',18,e.r*2+30);
           for(let k=0;k<4;k++)spawnEnemy('gnome',e.x+rand(-70,70),e.y+rand(-70,70));}
+      }else if(e.type==='inspector'){
+        e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
+        if(L>720){ // you cannot outrun paperwork
+          spray(e.x,e.y,14,'#222',200);
+          const a2=rand(TAU);e.x=P.x+Math.cos(a2)*480;e.y=P.y+Math.sin(a2)*480;
+          spray(e.x,e.y,14,'#222',200);AU.bossCry();
+          popText(e.x,e.y,'FOUND YOU','#ff6a6a',20,e.r*2+30);}
+        if(e.aiT<=0){e.aiT=4;
+          for(let k=0;k<14;k++){const a=k/14*TAU+G.t;
+            ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*175,vy:Math.sin(a)*175,r:7,dmg:20,life:6});}
+          AU.tone(180,70,.3,'square',.25);}
       }else{
         e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
         if(e.aiT<=0){e.aiT=3.2;
@@ -1293,7 +1343,16 @@ function banner(b1,b2=''){
 
 /* ============================== THREE.JS RENDERER ============================== */
 const cv=$('cv'),ov=$('ov'),octx=ov.getContext('2d');
-const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,preserveDrawingBuffer:true});
+let renderer;
+try{
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,preserveDrawingBuffer:true});
+}catch(err){
+  document.body.innerHTML='<div style="display:flex;height:100vh;align-items:center;justify-content:center;'+
+    'flex-direction:column;font-family:system-ui;color:#cfe8c0;background:#0c120c;text-align:center;padding:20px">'+
+    '<div style="font-size:54px">😵🩴</div><h2 style="color:#9fff4a">The lawn could not be rendered</h2>'+
+    '<p>THWACKALYPSE 64 needs WebGL. Try updating your browser or enabling hardware acceleration.</p></div>';
+  throw err;
+}
 renderer.setClearColor(0x8fc4dd);
 const scene=new THREE.Scene();
 scene.fog=new THREE.Fog(0x8fc4dd,520,1500);
@@ -1304,8 +1363,9 @@ const ODPR=Math.min(devicePixelRatio||1,1.5);
 let IW=480,IH=270;
 function resize(){
   const a=innerWidth/innerHeight;
-  if(a>=1){IH=270;IW=Math.round(IH*a/2)*2;}     // landscape: fixed height
-  else{IW=270;IH=Math.round(IW/a/2)*2;}          // portrait: fixed width
+  const base=(SAVE.settings&&SAVE.settings.res)||270;
+  if(a>=1){IH=base;IW=Math.round(IH*a/2)*2;}     // landscape: fixed height
+  else{IW=base;IH=Math.round(IW/a/2)*2;}          // portrait: fixed width
   renderer.setSize(IW,IH,false);
   camera.aspect=IW/IH;
   camera.fov=a<1?64:52; // widen FOV in portrait so the lawn stays visible
@@ -1710,6 +1770,14 @@ function buildBoss(type){
     const bc=new THREE.Mesh(mergeParts(bp),MAT);
     bc.position.set(22,16,0);g.add(bc);g.userData.briefcase=bc;
     g.scale.setScalar(2.1);
+  }else if(type==='inspector'){
+    suitParts(p,'#16161c','#c81e3c');
+    P_(p,B(17,4,2.5),'#000000',0,50,8);             // the sunglasses
+    P_(p,B(8,11,1.5),'#ffd23e',16,28,6,{ry:.3});    // the golden clipboard
+    P_(p,CY(8.5,8.5,5,8),'#16161c',0,60,0);          // the hat of authority
+    P_(p,CY(11.5,11.5,1.4,8),'#16161c',0,57,0);
+    g.add(new THREE.Mesh(mergeParts(p),MAT));
+    g.scale.setScalar(2.6);
   }else{ // gentrifitron
     P_(p,B(10,16,12),'#43505f',-9,8,0);P_(p,B(10,16,12),'#43505f',9,8,0);
     P_(p,B(34,38,24),'#5b6b7e',0,35,0);
@@ -2139,7 +2207,22 @@ function buildShop(){
 }
 $('bPlay').onclick=()=>{hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
 $('bShop').onclick=()=>{hideAll(['scrMenu']);buildShop();show('scrShop');G.state='shop';};
+/* trophies */
+function buildTrophies(){
+  const w=$('trophyRows');w.innerHTML='';
+  let got=0,total=0;
+  for(const id in ACHS){const A=ACHS[id],g=!!SAVE.ach[id];total++;if(g)got++;
+    const d=document.createElement('div');d.className='trow '+(g?'got':'lock');
+    d.innerHTML=`<div class="ti">${g?A.icon:'🔒'}</div><div><div class="tn">${g?A.name:'? ? ?'}</div>
+      <div class="td">${A.desc}${A.unlocks?' · 🔓 '+A.unlocks:''}</div></div>`;
+    w.appendChild(d);}
+  $('lifeStats').innerHTML=`🏆 ${got}/${total} · 💀 ${SAVE.stats.totalKills.toLocaleString()} lifetime thwacks · `+
+    `🪙 ${SAVE.stats.totalGold.toLocaleString()} lifetime gold · ⭐ ${SAVE.stats.wins} wins · 🧬 ${SAVE.stats.evos} evolutions`;
+}
+$('bTrophies').onclick=()=>{hideAll(['scrMenu']);buildTrophies();show('scrTrophies');G.state='trophies';};
+$('bBack4').onclick=()=>{hideAll(['scrTrophies']);refreshMenu();show('scrMenu');G.state='menu';};
 /* settings */
+let settingsFrom='menu';
 function setBtnTxt(){
   $('sShake').textContent=SAVE.settings.shake?'ON':'OFF';
   $('sCrt').textContent=SAVE.settings.crt?'ON':'OFF';
@@ -2147,19 +2230,29 @@ function setBtnTxt(){
   $('sMusicV').textContent=Math.round(SAVE.settings.music*100)+'%';
   $('sSfxV').textContent=Math.round(SAVE.settings.sfx*100)+'%';
   $('sSensV').textContent=Math.round((SAVE.settings.sens||1)*100)+'%';
+  $('sRes').textContent={220:'CRUSTY',270:'CLASSIC',360:'SHARP'}[SAVE.settings.res||270]||'CLASSIC';
   $('crt').style.display=SAVE.settings.crt?'block':'none';
 }
-$('bSettings').onclick=()=>{hideAll(['scrMenu']);
+function openSettings(from){
+  settingsFrom=from;
+  hideAll(['scrMenu','scrPause']);
   $('sMusic').value=SAVE.settings.music*100;$('sSfx').value=SAVE.settings.sfx*100;
   $('sSens').value=(SAVE.settings.sens||1)*100;
-  setBtnTxt();show('scrSettings');G.state='settings';};
+  setBtnTxt();show('scrSettings');G.state='settings';
+}
+$('bSettings').onclick=()=>openSettings('menu');
+$('bSettings2').onclick=()=>openSettings('pause');
 $('sSens').oninput=e=>{SAVE.settings.sens=e.target.value/100;persist();setBtnTxt();};
-$('bBack3').onclick=()=>{hideAll(['scrSettings']);refreshMenu();show('scrMenu');G.state='menu';};
+$('bBack3').onclick=()=>{hideAll(['scrSettings']);
+  if(settingsFrom==='pause'){show('scrPause');G.state='pause';}
+  else{refreshMenu();show('scrMenu');G.state='menu';}};
 $('sMusic').oninput=e=>{SAVE.settings.music=e.target.value/100;persist();AU.applyVols();setBtnTxt();};
 $('sSfx').oninput=e=>{SAVE.settings.sfx=e.target.value/100;persist();AU.applyVols();setBtnTxt();AU.coin();};
 $('sShake').onclick=()=>{SAVE.settings.shake=SAVE.settings.shake?0:1;persist();setBtnTxt();};
 $('sCrt').onclick=()=>{SAVE.settings.crt=SAVE.settings.crt?0:1;persist();setBtnTxt();};
 $('sDmg').onclick=()=>{SAVE.settings.dmgnum=SAVE.settings.dmgnum?0:1;persist();setBtnTxt();};
+$('sRes').onclick=()=>{const o=[220,270,360],i=o.indexOf(SAVE.settings.res||270);
+  SAVE.settings.res=o[(i+1)%3];persist();setBtnTxt();resize();};
 $('crt').style.display=SAVE.settings.crt?'block':'none';
 $('bBack1').onclick=()=>{hideAll(['scrSelect']);refreshMenu();show('scrMenu');G.state='menu';};
 $('bBack2').onclick=()=>{hideAll(['scrShop']);refreshMenu();show('scrMenu');G.state='menu';};

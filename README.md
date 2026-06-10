@@ -12,7 +12,9 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 - 8 weapons × 5 levels, each with a **unique evolution** (BRUNCHNADO, MURDER HORNETS, DROP THE SUN…)
 - 8 passives, 8 enemy types, 3 bosses, horde events, elite chests
 - 3 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One
-- 10 achievements, permanent meta shop, persistent saves
+- 11 achievements with a trophies gallery, permanent meta shop, persistent saves
+- **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
+- **Installable PWA** — add it to your home screen; plays fully offline after first load
 - **Full 360° third-person camera** — mouse-look (click to capture), drag, scroll zoom, right-stick, or right-thumb
 - Keyboard, mouse, **gamepad**, and **touch** controls
 - Fully synthesized soundtrack & SFX (WebAudio — zero audio files)
