@@ -26,8 +26,11 @@
   :root{
     --lime:#9fff4a; --gold:#ffd23e; --pink:#ff5d8f; --bg:#0c120c;
   }
+  /* color emoji everywhere: Windows/macOS use system fonts, Linux/SteamOS falls back to bundled Twemoji */
+  @font-face{font-family:'Twemoji Mozilla';src:url('twemoji.ttf');font-display:swap;}
   *{box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:"Segoe UI",system-ui,sans-serif;color:#eee;
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);
+    font-family:"Segoe UI",system-ui,"Apple Color Emoji","Segoe UI Emoji","Twemoji Mozilla",sans-serif;color:#eee;
     overscroll-behavior:none;}
   canvas#cv{display:block;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;touch-action:none;-webkit-touch-callout:none;}
   canvas#ov{display:block;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;pointer-events:none;z-index:5;}
@@ -269,10 +272,11 @@
     <button class="btn alt sm" id="bSettings">SETTINGS</button>
   </div>
   <div class="stats-line" id="menuStats"></div>
+  <a id="bWish" class="btn sm hide" style="display:inline-block;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.1 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.2 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -303,6 +307,18 @@
   <button class="btn" id="bChestOk">NICE</button>
 </div>
 
+<div id="scrModal" class="screen hide" style="z-index:40">
+  <h2 class="bigword" id="modalTitle" style="font-size:34px"></h2>
+  <div class="small" id="modalText" style="font-size:13px"></div>
+  <textarea id="modalInput" class="hide" style="width:min(440px,90vw);height:90px;background:#141d12;color:#cfe8c0;
+    border:2px solid #2c3f24;border-radius:10px;padding:10px;font-family:monospace;font-size:12px;
+    -webkit-user-select:text;user-select:text" spellcheck="false"></textarea>
+  <div style="margin-top:12px">
+    <button class="btn" id="modalOk">OK</button>
+    <button class="btn alt" id="modalCancel">CANCEL</button>
+  </div>
+</div>
+
 <div id="scrAlmanac" class="screen hide">
   <h2 class="bigword">THE ALMANAC</h2>
   <div id="almRows"></div>
@@ -325,9 +341,20 @@
   <div class="setrow"><span class="sl">🔢 Damage numbers</span><button class="btn mini" id="sDmg"></button></div>
   <div class="setrow"><span class="sl">🎥 Camera speed</span><input type="range" id="sSens" min="40" max="200"><span class="sv" id="sSensV"></span></div>
   <div class="setrow"><span class="sl">🖥 Sharpness</span><button class="btn mini" id="sRes"></button></div>
+  <div class="setrow"><span class="sl">🌐 Language</span><button class="btn mini" id="sLang"></button></div>
   <div class="setrow"><span class="sl">💾 Save data</span>
     <button class="btn mini" id="sExport">EXPORT</button>
     <button class="btn mini" id="sImport">IMPORT</button></div>
+  <div class="setrow hide" id="rowWin"><span class="sl">🪟 Display</span><button class="btn mini" id="sWin"></button></div>
+  <div class="setrow"><span class="sl">⌨ Up / Down</span>
+    <button class="btn mini kb" data-slot="up"></button>
+    <button class="btn mini kb" data-slot="down"></button></div>
+  <div class="setrow"><span class="sl">⌨ Left / Right</span>
+    <button class="btn mini kb" data-slot="left"></button>
+    <button class="btn mini kb" data-slot="right"></button></div>
+  <div class="setrow"><span class="sl">💨 Dash key</span>
+    <button class="btn mini kb" data-slot="dash"></button>
+    <button class="btn mini" id="kbReset" style="width:auto;padding:7px 12px">↺</button></div>
   <button class="btn alt" id="bBack3" style="margin-top:14px">BACK</button>
 </div>
 
@@ -384,19 +411,96 @@ const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 const $=id=>document.getElementById(id);
 
 /* ============================== SAVE ============================== */
+const KEYDEF={up:'w',down:'s',left:'a',right:'d',dash:' '};
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0,start:0},ach:{},lastMap:'lawn',
   streak:{date:'',n:0},
   mowplus:0,mowWins:{},bests:{},daily:null,seen:{},
-  settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270},
+  settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270,lang:'en',keys:{...KEYDEF}},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
+const NATIVE=window.native||null; // Electron/Steam bridge (preload.js); null on the web
 let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
-try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
+try{
+  const raw=(NATIVE&&NATIVE.loadSave())||localStorage.getItem('thwackalypse');
+  const s=JSON.parse(raw);
   if(s){SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
     mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,seen:{...(s.seen||{})},
     streak:s.streak||{date:'',n:0},
-    settings:{...SAVE_DEF.settings,...(s.settings||{})},stats:{...SAVE_DEF.stats,...(s.stats||{})}};}
+    settings:{...SAVE_DEF.settings,...(s.settings||{}),
+      keys:{...KEYDEF,...((s.settings||{}).keys||{})}},
+    stats:{...SAVE_DEF.stats,...(s.stats||{})}};}
 }catch(e){}
-function persist(){try{localStorage.setItem('thwackalypse',JSON.stringify(SAVE));}catch(e){}}
+function persist(){
+  const data=JSON.stringify(SAVE);
+  try{localStorage.setItem('thwackalypse',data);}catch(e){}
+  if(NATIVE)try{NATIVE.saveSave(data);}catch(e){} // Steam Cloud syncs this file
+}
+
+/* ============================== I18N ============================== */
+const LANG=SAVE.settings.lang==='zh'?'zh':'en';
+const ZH={
+  // menus & buttons
+  'PLAY':'开始游戏','📅 DAILY RUN':'📅 每日挑战','LAWN SHOP':'草坪商店','TROPHIES':'奖杯',
+  'ALMANAC':'年鉴','SETTINGS':'设置','BACK':'返回','RESUME':'继续','ABANDON LAWN':'放弃草坪',
+  'ONE MORE LAWN':'再来一局','MENU':'菜单','KEEP MOWING (endless)':'继续修剪（无尽模式）',
+  '📋 SHARE':'📋 分享','NICE':'好','⛶ FULLSCREEN':'⛶ 全屏','OK':'确定','CANCEL':'取消',
+  'CHOOSE YOUR DEFENDER':'选择你的守卫者','LEVEL UP!':'升级！','PAUSED':'已暂停',
+  'YOU GOT THWACKED':'你被拍飞了','LAWN DEFENDED!':'草坪保卫成功！','🎁 CHEST!':'🎁 宝箱！',
+  'THE ALMANAC':'年鉴','EXPORT':'导出','IMPORT':'导入','MUTE: OFF':'静音：关','MUTE: ON':'静音：开',
+  'pick one — the lawn depends on it':'选一个——草坪就靠它了',
+  'a 100% legally distinct bullet heaven — now in glorious low-poly 3D 🦩':'一款 100% 法律意义上完全不同的弹幕天堂——华丽低多边形 3D 🦩',
+  'DASH [SPACE]':'冲刺 [空格]',
+  // settings labels
+  '🎵 Music':'🎵 音乐','🔊 Sound FX':'🔊 音效','📳 Screen shake':'📳 屏幕震动','📺 CRT filter':'📺 CRT 滤镜',
+  '🔢 Damage numbers':'🔢 伤害数字','🎥 Camera speed':'🎥 镜头速度','🖥 Sharpness':'🖥 清晰度',
+  '💾 Save data':'💾 存档','🪟 Display':'🪟 显示','⌨ Up / Down':'⌨ 上 / 下','⌨ Left / Right':'⌨ 左 / 右',
+  '💨 Dash key':'💨 冲刺键','🌐 Language':'🌐 语言','ON':'开','OFF':'关',
+  'CRUSTY':'粗糙','CLASSIC':'经典','SHARP':'锐利','WINDOWED':'窗口','FULLSCREEN':'全屏',
+  'IMPORT SAVE':'导入存档','Paste your THWACK64 save code below.':'在下方粘贴你的 THWACK64 存档码。',
+  'INVALID CODE':'无效代码','That save code didn\'t parse. The lawn rejects it. 🩴':'存档码无法解析。草坪拒绝了它。🩴',
+  'COPIED!':'已复制！','FAILED':'失败','✅ COPIED!':'✅ 已复制！','❌ COPY FAILED':'❌ 复制失败','❌ NO CLIPBOARD':'❌ 无剪贴板',
+  // cards & shop
+  'WEAPON':'武器','PASSIVE':'被动','⚡ EVOLUTION':'⚡ 进化','NEW!':'新！','consumable':'消耗品',
+  'Emergency Burger':'应急汉堡','You\'ve maxed everything?! Fine. Heal 50 HP and +50 gold.':'全都满级了？！行吧。回复 50 生命并获得 50 金币。',
+  'Level 1':'等级 1','MAX':'满','🎲 REROLL':'🎲 重抽','left':'次',
+  // hud / run
+  'LV ':'等级 ','no build yet':'还没有配置',
+  // banners & popups
+  'DEFEND THE LAWN!':'保卫草坪！','they\'re coming for the grass':'他们冲着草来了',
+  'WASD moves · mouse looks · wheel zooms':'WASD 移动 · 鼠标视角 · 滚轮缩放',
+  'left thumb moves · right thumb looks':'左手拇指移动 · 右手拇指视角',
+  '🔥 MOW+ — DEFEND THE LAWN!':'🔥 修剪+ ——保卫草坪！','ENDLESS MODE':'无尽模式',
+  'how long can the lawn last?':'草坪还能撑多久？',
+  'SECOND WIND!':'回光返照！','the lawn isn\'t done with you':'草坪和你还没完',
+  'EVICTED!':'被驱逐了！','the lawn breathes easier':'草坪松了一口气',
+  'your':'你的','has ascended':'已飞升',
+  'elite spotted — she drops a chest':'精英出现——她会掉落宝箱',
+  '📋 PATRICIA HAS FILED A COMPLAINT':'📋 帕特丽夏提交了投诉',
+  'THWACK!':'啪！','DENIED':'无效','FOUND YOU':'找到你了','WE\'RE NOT DONE':'咱们没完',
+  'MANAGER VOICE':'经理之声','HOA, ASSEMBLE!':'业委会，集合！','I AM THE MANAGER':'我就是经理',
+  'HOW DARE YOU':'你好大的胆子','I WANT EVERYONE FIRED':'我要让所有人都被开除',
+  'CITATION!!':'罚单！！','RENT\'S DUE':'该交房租了','FRIDGE MAGNET!':'冰箱贴！',
+  'EVIDENCE DELETED. +250g':'证据已删除。+250金',
+  'AUDIT PASSED. +500g':'审计通过。+500金','COMBO x':'连击 x',
+  'KAREN HAS LEFT THE LAWN':'卡伦离开了草坪',
+  // end screens
+  'Survived':'存活','Level':'等级','thwacked':'被拍飞','banked':'入账','Total damage':'总伤害',
+  'You defeated':'你击败了','The lawn is finally quiet.':'草坪终于安静了。',
+  'You survived':'你存活了','Dash Signature':'冲刺绝技','BEST TODAY':'今日最佳','best':'最佳',
+  // menu stats
+  'banked2':'已存金币','⏱ best:':'⏱ 最佳：','📅 today:':'📅 今日：','-day streak':'天连击','👑 LAWN LEGEND':'👑 草坪传奇',
+  // trophies / almanac
+  '? ? ?':'？？？','not yet encountered':'尚未遭遇','find it in a level-up':'在升级中寻找',
+  'runs':'局','lifetime thwacks':'累计拍飞','lifetime gold':'累计金币','wins':'胜场','evolutions':'进化次数',
+  'HOW TO PLAY':'玩法指南','DEFENDERS':'守卫者','ARSENAL':'兵工厂','RESIDENTS':'居民','MANAGEMENT':'管理层',
+  'each one dashes differently':'每个人的冲刺都不同','discovered by using each weapon':'使用武器后解锁',
+  'discovered on sight':'目击后解锁','they know where you live':'他们知道你住哪',
+  'evolves into':'进化为','pairs with':'搭配','· evolution undiscovered':'· 进化尚未发现',
+  '🧬 evolves with':'🧬 进化搭配',
+  // daily / share
+  'DAILY':'每日','seeded — everyone fights the same waves · score = thwacks':'固定种子——所有人面对相同敌潮 · 分数 = 拍飞数',
+  'Front Lawn':'前院草坪','survived':'存活','KAREN evicted':'卡伦已被驱逐',
+};
+const T=s=>LANG==='zh'?(ZH[s]??s):s;
 /* accessibility: first boot on a reduced-motion system starts calm */
 if(!localStorage.getItem('thwackalypse')&&typeof matchMedia==='function'
   &&matchMedia('(prefers-reduced-motion: reduce)').matches){
@@ -512,9 +616,17 @@ const AU={
 
 /* ============================== INPUT ============================== */
 const keys={};
+let kbCapture=null; // settings rebind: next keypress fills this slot
 addEventListener('keydown',e=>{
   AU.init();if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
-  const k=e.key.toLowerCase();keys[k]=true;
+  const k=e.key.toLowerCase();
+  if(kbCapture){
+    e.preventDefault();
+    if(k!=='escape')SAVE.settings.keys[kbCapture]=k;
+    kbCapture=null;persist();refreshKb();
+    return;
+  }
+  keys[k]=true;
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   if(k==='m')toggleMute();
   if((k==='p'||k==='escape')&&(G.state==='play'||G.state==='pause'))togglePause();
@@ -624,7 +736,7 @@ addEventListener('touchstart',touchCopy,{once:true,passive:true});
 document.addEventListener('visibilitychange',()=>{ // iOS suspends audio on tab-away
   if(!document.hidden&&AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
 });
-if('serviceWorker' in navigator&&!['localhost','127.0.0.1'].includes(location.hostname)){
+if(!NATIVE&&'serviceWorker' in navigator&&!['localhost','127.0.0.1'].includes(location.hostname)){
   addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 
@@ -761,6 +873,7 @@ const KAREN_LINES=['I\'M CALLING THE POLICE','DO YOU HAVE A PERMIT?','I KNOW THE
   'THIS IS GOING ON NEXTDOOR','I WANT YOUR NAME','UNBELIEVABLE.','MY HUSBAND IS A LAWYER'];
 function ach(id){
   if(SAVE.ach[id])return;SAVE.ach[id]=true;persist();
+  if(NATIVE)try{NATIVE.ach(id);}catch(e){} // mirror to Steam achievements
   const A=ACHS[id];if(!A)return;
   const d=document.createElement('div');d.className='toast';
   d.innerHTML=`<div class="ti">${A.icon}</div><div><div class="tn">${A.name}</div>
@@ -843,6 +956,106 @@ const MAPS=[
 ];
 let MAP=MAPS[0];
 
+/* zh data overlay: patches the content tables in place when language is Chinese */
+function applyZhData(){
+  const W={
+    spatula:['锅铲旋风',l=>`${[1,2,3,3,4][l-1]} 把锅铲绕着你旋转，把靠近的一切都铲飞。`],
+    chancla:['致命拖鞋',l=>`扔出 ${[1,1,2,2,3][l-1]} 只管教之拖鞋，它总会飞回来。`],
+    toast:['吐司发射器',l=>`向最近的威胁发射 ${[1,2,2,3,4][l-1]} 片滚烫吐司，可穿透 ${[1,1,2,2,3][l-1]} 个敌人。`],
+    bees:['蜜蜂伙伴',l=>`${[2,3,4,5,6][l-1]} 只忠诚的蜜蜂在你身边巡逻，碰到就蜇。`],
+    bass:['低音炮',l=>`释放 ${[100,115,130,150,175][l-1]} 像素的冲击波。字面意义上的"控场"。`],
+    sprinkler:['洒水器',l=>`旋转喷射市政供水。喷速随等级提升。`],
+    darts:['草坪飞镖',l=>`向最近的威胁投掷 ${[1,1,2,2,3][l-1]} 支 1988 年起被禁的草坪飞镖，穿透一切。`],
+    sand:['袖中砂',l=>`唰！一片致盲沙锥，减速所有命中的敌人。`],
+    blower:['吹叶机',l=>`一股${['温和','强劲','猛烈','咆哮','毁灭级'][l-1]}的气流。伤害不高，羞辱拉满。`],
+    gnomes:['草坪地精',l=>`部署最多 ${[1,2,2,3,3][l-1]} 个金色地精，痛击任何靠近的敌人。`],
+  };
+  for(const id in W){WEAPONS[id].name=W[id][0];WEAPONS[id].desc=W[id][1];}
+  const E={
+    spatula:['早午餐龙卷风','六把工业级锅铲。厨房已飞升，早午餐永恒。'],
+    chancla:['究极拖鞋','五只老妈级拖鞋进入永久正义轨道。'],
+    toast:['手工法棍','手工酸面法棍标枪。穿透 8 个敌人和你的碳水上限。'],
+    bees:['杀人蜂','蜜蜂成立了工会，他们的诉求是暴力。'],
+    bass:['日落重低音','重到业委会能在梦里听见的冲击波。'],
+    sprinkler:['高压水枪','3000 PSI 的市政之怒。解压且致命。'],
+    darts:['标枪赛季','奥运会来电话了，想要回他们的限制令。'],
+    sand:['袖中沙丘','你现在随身携带一片沙漠。一切都慢了。一切都是沙。'],
+    blower:['五级飓风','气象局发布了预警。预警就是你。'],
+    gnomes:['地精军团','六尊黄金哨兵。业委会叫它们"违章建筑"，它们叫业委会"午餐"。'],
+  };
+  for(const id in E){EVO[id].name=E[id][0];EVO[id].desc=E[id][1];}
+  const PS={
+    protein:['蛋白粉','+20% 伤害。练出来的。地精们看得出来。'],
+    cardio:['有氧运动','+10% 移速。业委会最恨会跑的目标。'],
+    snacks:['零食储备','+25 最大生命并小幅回复。情绪支持碳水。'],
+    magnet:['磁力手','+40% 拾取范围。别再像个农民一样走过去捡了。'],
+    espresso:['浓缩咖啡','+9% 攻速。你现在能听见颜色了。'],
+    clover:['幸运四叶草','+8% 暴击率。暴击造成双倍伤害。'],
+    armor:['隔热手套','每级每次受击减免 1.5 伤害。又防又时尚。'],
+    regen:['防晒霜','每级每秒回复 0.8 生命。SPF：无限。'],
+  };
+  for(const id in PS){PASSIVES[id].name=PS[id][0];const d=PS[id][1];PASSIVES[id].desc=()=>d;}
+  const C={
+    gerald:['杰拉德','草坪老爸','有烤架、有水管，对草坪的事零容忍。','🔥 冲刺留下烧烤火焰路径',['🍖 +15% 伤害','🔥 冲刺：烤架火路','初始：锅铲旋风']],
+    babushka:['巴布什卡','拖鞋狙击手','熬过了三个时代和一个业委会。拖鞋从不失手。','💪 冲刺撞飞路径上的一切',['❤️ 170 生命','💪 冲刺：肩撞','初始：致命拖鞋']],
+    gobbo:['DJ 哥布','低音哥布林','因"过度重低音"被 14 家场馆拉黑。草坪就是他的舞台。','🔊 冲刺结束时来一记低音炮',['⚡ +22% 攻速','🔊 冲刺：落地低音','初始：低音炮']],
+    briney:['腌瓜船长','七海腌黄瓜','一根有故事的腌黄瓜。外脆，内更咸。','🧂 冲刺留下减速盐水带',['🎯 +17% 暴击','🧂 冲刺：盐水尾迹','初始：洒水器']],
+    mothlad:['飞蛾小子','灯之友','脆弱。飞快。看到门廊灯绝对会中途离场。','🪽 冲刺更长，冷却更短',['💨 +28% 移速','🪽 冲刺：超长滑翔','初始：蜜蜂伙伴']],
+    mowbot:['割草机器人','5150 号机','一台在雷暴中觉醒的骑乘式割草机。只认识草坪。','🚜 冲刺修剪碰到的一切',['🛡 每次受击减免 3 伤害','🚜 冲刺：修剪','初始：草坪飞镖'],'击败卡伦（12:00）解锁'],
+    raccoon:['垃圾熊猫','垃圾鉴赏家','在垃圾堆里捡到一把武士刀。其实是泳池捞网。他并不知道。','💰 冲刺顺手从敌人身上偷金币',['🤑 +50% 金币','💰 冲刺：扒窃','初始：袖中砂'],'累计存入 1000 金币解锁'],
+  };
+  for(const id in C){const c=CHARS.find(x=>x.id===id),z=C[id];
+    c.name=z[0];c.sub=z[1];c.blurb=z[2];c.dash=z[3];c.chips=z[4];
+    if(c.unlock&&z[5])c.unlock.hint=z[5];}
+  const EN={
+    gnome:['草坪地精','标准款草坪祸害。成群结队，令人失望。'],
+    pigeon:['鸽子','骨头是空的，道德也是。'],
+    flamingo:['火烈鸟','塑料外表，真实的仇恨。'],
+    roomba:['扫地机器人','4.2 版固件更新加入了嗜血模式。'],
+    mole:['鼹鼠','长着鼻子的财产损失。'],
+    crow:['乌鸦','记得你的脸。集体投诉。'],
+    gator:['草坪鳄鱼','业委会说不许养宠物。鳄鱼不同意。'],
+    patricia:['帕特丽夏·业委会执法官','精英。提交投诉，掉落文件（宝箱）。'],
+  };
+  for(const id in EN){ENEMY[id].title=EN[id][0];ENEMY[id].lore=EN[id][1];}
+  const A={
+    kills100:['草坪执法','单局拍飞 100 个'],kills1000:['现代拍飞启示录','单局拍飞 1,000 个'],
+    boss1:['弹劾成功','击败霍华德','地图：午夜修剪'],sweep:['驱逐令翻转','单局击败全部 3 个头目','地图：一杆进地精'],
+    survivor:['认证草坪','击败 卡伦·最终形态，拯救草坪','角色：割草机器人'],
+    rich:['种子资金','累计存入 1,000 金币','角色：垃圾熊猫'],
+    evolved:['庭院达尔文主义','进化一件武器'],maxed:['火力全开','任意武器升到 5 级'],
+    fullhouse:['满棚','填满全部 10 个栏位'],untouched:['碰不到草','5:00 前不受任何伤害'],
+    auditor:['通过审计','击败稽查员（无尽模式 15:00+）','地图：永恒安息'],
+    overgrown:['杂草丛生','赢下一局 修剪+'],onestar:['一星差评','90 秒内击败卡伦'],
+  };
+  for(const id in A){ACHS[id].name=A[id][0];ACHS[id].desc=A[id][1];if(A[id][2])ACHS[id].unlocks=A[id][2];}
+  const M={
+    lawn:['前院草坪','一切开始的地方。'],
+    night:['午夜修剪','+25% 金币 · 敌人快 6% · 有萤火虫'],
+    golf:['一杆进地精','+15% 经验 · 敌人 +12% 生命 · 小心沙坑'],
+    grave:['永恒安息','+30% 金币 · +20% 经验 · 敌人更强更快 · 这里的住户不太安分'],
+  };
+  for(const id in M){const m=MAPS.find(x=>x.id===id);m.name=M[id][0];m.desc=M[id][1];}
+  const S={dmg:['老爸力量','每层永久 +4% 伤害。'],hp:['厚脸皮','每层永久 +12 最大生命。'],
+    spd:['好鞋','每层永久 +3% 移速。'],greed:['贪婪','每层永久 +12% 金币收益。'],
+    revive:['回光返照','每局可逃脱死亡一次。草坪和你还没完。'],
+    start:['抢跑','每层让每局开局免费选一次升级。']};
+  for(const id in S){const it=SHOP.find(x=>x.id===id);it.name=S[id][0];it.desc=S[id][1];}
+  BOSSES[0].name='霍华德·业委会主席';BOSSES[0].sub='他量过你的草，高了 0.4 厘米。';
+  BOSSES[1].name='房东';BOSSES[1].sub='来把押金留下的。全部。';
+  BOSSES[2].name='士绅化金刚9000';BOSSES[2].sub='哔——哔。本草坪现为豪华公寓。';
+  KAREN.name='卡伦·最终形态';KAREN.sub='已请她离开。她拒绝了。';
+  INSPECTOR.name='稽查员';INSPECTOR.sub='你家草坪的最终审计。他有几个问题。';
+  KAREN_LINES.length=0;
+  KAREN_LINES.push('我要报警了','你有许可证吗？','我认识市长','这事我要发到业主群','报上你的名字','难以置信。','我老公是律师');
+  EVENTS[0].b='鸽群降临';EVENTS[0].s='鸽子。为什么偏偏是鸽子。';
+  EVENTS[1].b='火烈鸟大迁徙';EVENTS[1].s='它们记得你对塑料表亲做过什么';
+  EVENTS[2].b='扫地机器人召回';EVENTS[2].s='固件更新：暴力';
+  EVENTS[3].b='鸽群：第二轮';EVENTS[3].s='咕。';
+  EVENTS[4].b='鼹鼠起义';EVENTS[4].s='大地本身在反抗';
+}
+if(LANG==='zh')applyZhData();
+
 /* ============================== GAME STATE ============================== */
 const G={state:'menu',t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
   kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,dying:false};
@@ -883,9 +1096,9 @@ function newRun(charId){
   show('hud');hideAll(['scrMenu','scrSelect','scrShop','scrDead','scrWin','scrLevel','scrChest','scrPause']);
   G.state='play';updateWrow();
   CAM.yaw=0;CAM.pitch=.62;CAM.dist=300;
-  banner(G.mowplus?'🔥 MOW+ — DEFEND THE LAWN!':'DEFEND THE LAWN!',
-    document.body.classList.contains('touch')?
-    'left thumb moves · right thumb looks':'WASD moves · mouse looks · wheel zooms');
+  banner(T(G.mowplus?'🔥 MOW+ — DEFEND THE LAWN!':'DEFEND THE LAWN!'),
+    T(document.body.classList.contains('touch')?
+    'left thumb moves · right thumb looks':'WASD moves · mouse looks · wheel zooms'));
 }
 function recompute(){
   const c=P.char,u=SAVE.upg,ps=P.passives;
@@ -915,7 +1128,7 @@ function nearestEnemy(x,y,maxD=520){
 function fireBullet(o){bullets.push(Object.assign({pierce:1,life:2,r:8,kind:'toast',hitMap:null,rot:0,rotS:0},o));}
 
 function hitEnemy(e,dmg,opts={}){
-  if(e.invT>0){if(RNG()<.12)popText(e.x,e.y,'DENIED','#9ab59a',14,e.r+30);return;}
+  if(e.invT>0){if(RNG()<.12)popText(e.x,e.y,T('DENIED'),'#9ab59a',14,e.r+30);return;}
   let crit=RNG()<(P.stats.crit+(opts.critBonus||0));
   let d=dmg*P.stats.dmg*(crit?2:1);
   d=Math.round(d*rand(.92,1.08));
@@ -926,7 +1139,7 @@ function hitEnemy(e,dmg,opts={}){
   if(kb){const dx=e.x-(opts.fx??P.x),dy=e.y-(opts.fy??P.y),L=Math.hypot(dx,dy)||1;
     e.kx+=dx/L*kb;e.ky+=dy/L*kb;}
   popText(e.x+rand(-8,8),e.y,Math.round(d),crit?'#ffd23e':'#fff',crit?22:15+Math.min(10,d/12),e.r+30);
-  if(crit){AU.crit();if(RNG()<.25)popText(e.x,e.y,'THWACK!','#ff5d8f',17,e.r+54);}
+  if(crit){AU.crit();if(RNG()<.25)popText(e.x,e.y,T('THWACK!'),'#ff5d8f',17,e.r+54);}
   else AU.hit();
   spray(e.x,e.y,3,e.col,120);
   if(e.hp<=0){killEnemy(e);if(crit)G.ts=Math.min(G.ts,.45);} // crit-kill hit-stop
@@ -936,7 +1149,7 @@ function killEnemy(e){
   e.dead=true;G.kills++;
   G.combo++;G.comboT=1.2;
   if([15,30,50,100,200,400].includes(G.combo)){
-    popText(P.x,P.y,'COMBO x'+G.combo,'#6fd3ff',19+Math.min(10,G.combo/20),74);
+    popText(P.x,P.y,T('COMBO x')+G.combo,'#6fd3ff',19+Math.min(10,G.combo/20),74);
     AU.tone(500+G.combo*2,800+G.combo*2,.12,'square',.12);}
   if(G.kills===100)ach('kills100');if(G.kills===1000)ach('kills1000');
   spray(e.x,e.y,e.boss?40:e.elite?20:8,e.col,e.boss?340:200);
@@ -945,7 +1158,7 @@ function killEnemy(e){
     G.shake=18;G.ts=.25;AU.boom();AU.chest();G.boss=null;
     if(e.type==='hoa')ach('boss1');
     if(e.type==='inspector'){ach('auditor');G.gold+=500;
-      popText(e.x,e.y,'AUDIT PASSED. +500g','#ffd23e',22,90);}
+      popText(e.x,e.y,T('AUDIT PASSED. +500g'),'#ffd23e',22,90);}
     if(e.type==='karen'){
       G.karenDeadT=G.t;
       if(G.t-G.karenT<90)ach('onestar');
@@ -957,7 +1170,7 @@ function killEnemy(e){
     for(let i=0;i<12;i++)coins.push({x:e.x+rand(-70,70),y:e.y+rand(-70,70),v:5});
     pickups.push({x:e.x,y:e.y,kind:'chest',big:true});
     pickups.push({x:e.x+50,y:e.y+20,kind:'burger'});
-    banner(e.name+' EVICTED!','the lawn breathes easier');
+    banner(e.name+T(' EVICTED!'),T('the lawn breathes easier'));
   }else{
     G.shake=Math.min(G.shake+(e.elite?6:1.2),10);
     gems.push(gem(e.x,e.y,e.xp));
@@ -986,7 +1199,7 @@ function die(){
     G.shake=14;G.ts=.3;AU.boom();AU.level();
     forNear(P.x,P.y,300,e=>hitEnemy(e,400,{fx:P.x,fy:P.y,kb:600}));
     spray(P.x,P.y,50,'#9fff4a',360);
-    banner('🪦 SECOND WIND!','the lawn isn\'t done with you');
+    banner('🪦 '+T('SECOND WIND!'),T('the lawn isn\'t done with you'));
     return;
   }
   G.dying=true;
@@ -996,9 +1209,9 @@ function die(){
   if(G.t>SAVE.best){SAVE.best=G.t;persist();}
   setTimeout(()=>{
     $('deadStats').innerHTML=
-      `Survived <b>${fmtT(G.t)}</b> · Level <b>${P.lvl}</b><br>`+
-      `💀 <b>${G.kills}</b> thwacked · 🪙 <b>${G.gold}</b> banked<br>`+
-      `Total damage: <b>${G.dmgDealt.toLocaleString()}</b>`+dailyLineHtml()+weaponStatsHtml();
+      `${T('Survived')} <b>${fmtT(G.t)}</b> · ${T('Level')} <b>${P.lvl}</b><br>`+
+      `💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')}<br>`+
+      `${T('Total damage')}: <b>${G.dmgDealt.toLocaleString()}</b>`+dailyLineHtml()+weaponStatsHtml();
     show('scrDead');G.state='dead';
   },900);
 }
@@ -1013,21 +1226,21 @@ function bankGold(){if(!G.banked){SAVE.gold+=G.gold;G.banked=true;
 function dailyLineHtml(){
   if(!G.daily)return '';
   const best=(SAVE.daily&&SAVE.daily.date===todayStr())?SAVE.daily.score:0;
-  return `<br>📅 DAILY ${todayStr()}: <b>${G.kills}</b> 💀 ${G.kills>=best?'— <b style="color:var(--gold)">BEST TODAY</b>':'(best '+best+')'}`;
+  return `<br>📅 ${T('DAILY')} ${todayStr()}: <b>${G.kills}</b> 💀 ${G.kills>=best?'— <b style="color:var(--gold)">'+T('BEST TODAY')+'</b>':'('+T('best')+' '+best+')'}`;
 }
 function shareText(){
-  return `🩴 THWACKALYPSE 64${G.daily?' DAILY '+todayStr():''} — survived ${fmtT(G.t)}, `+
-    `${G.kills.toLocaleString()} thwacked${G.won?', KAREN evicted':''} → https://stobieee-bit.github.io/thwackalypse/`;
+  return `🩴 THWACKALYPSE 64${G.daily?' '+T('DAILY')+' '+todayStr():''} — ${T('survived')} ${fmtT(G.t)}, `+
+    `${G.kills.toLocaleString()} ${T('thwacked')}${G.won?', '+T('KAREN evicted'):''} → https://stobieee-bit.github.io/thwackalypse/`;
 }
 function wireShare(btnId){
   const b=$(btnId);
   b.onclick=()=>{
     const t=shareText();
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(t).then(()=>{b.textContent='✅ COPIED!';},
-        ()=>{b.textContent='❌ COPY FAILED';});
-    }else b.textContent='❌ NO CLIPBOARD';
-    setTimeout(()=>b.textContent='📋 SHARE',2000);
+      navigator.clipboard.writeText(t).then(()=>{b.textContent=T('✅ COPIED!');},
+        ()=>{b.textContent=T('❌ COPY FAILED');});
+    }else b.textContent=T('❌ NO CLIPBOARD');
+    setTimeout(()=>b.textContent=T('📋 SHARE'),2000);
   };
 }
 function spray(x,y,n,col,spd=200){
@@ -1070,7 +1283,7 @@ function openLevelUp(){
   const cd=$('cards');cd.innerHTML='';
   for(const p of picks)cd.appendChild(makeCard(p,()=>{applyChoice(p);closeLevelUp();}));
   const rb=$('bReroll');
-  rb.textContent=`🎲 REROLL (${G.rerolls} left)`;
+  rb.textContent=`${T('🎲 REROLL')} (${G.rerolls} ${T('left')})`;
   rb.disabled=G.rerolls<=0;rb.style.opacity=G.rerolls>0?1:.45;
   show('scrLevel');
   GP.focus=0;gpFocusSet(0);
@@ -1079,21 +1292,21 @@ $('bReroll').onclick=()=>{if(G.rerolls>0&&G.state==='levelup'){G.rerolls--;openL
 function makeCard(p,onClick){
   const div=document.createElement('div');div.className='upcard';
   if(p.kind==='heal'){
-    div.innerHTML=`<div class="ic">🍔</div><div class="nm">Emergency Burger</div><div class="lv">consumable</div><div class="ds">You've maxed everything?! Fine. Heal 50 HP and +50 gold.</div>`;
+    div.innerHTML=`<div class="ic">🍔</div><div class="nm">${T('Emergency Burger')}</div><div class="lv">${T('consumable')}</div><div class="ds">${T('You\'ve maxed everything?! Fine. Heal 50 HP and +50 gold.')}</div>`;
   }else if(p.kind==='evo'){
     const E=EVO[p.wid];div.classList.add('evoCard');
-    div.innerHTML=`<div class="tagW">⚡ EVOLUTION</div><div class="ic">${E.icon}</div>
+    div.innerHTML=`<div class="tagW">${T('⚡ EVOLUTION')}</div><div class="ic">${E.icon}</div>
       <div class="nm">${E.name}</div>
-      <div class="lv">🧬 ${WEAPONS[p.wid].name} ascends</div>
+      <div class="lv">🧬 ${WEAPONS[p.wid].name} ${T('has ascended')}</div>
       <div class="ds">${E.desc}</div>`;
   }else{
     const def=p.kind==='w'?WEAPONS[p.id]:PASSIVES[p.id];
-    const tag=p.kind==='w'?'<div class="tagW">WEAPON</div>':'<div class="tagP">PASSIVE</div>';
+    const tag=p.kind==='w'?`<div class="tagW">${T('WEAPON')}</div>`:`<div class="tagP">${T('PASSIVE')}</div>`;
     const isNew=p.lvl===1;
-    const hint=p.kind==='w'?`<div class="evhint">🧬 evolves with ${PASSIVES[EVO[p.id].passive].name} Lv2+</div>`:'';
-    div.innerHTML=`${tag}${isNew?'<div class="new">NEW!</div>':''}<div class="ic">${def.icon}</div>
+    const hint=p.kind==='w'?`<div class="evhint">${T('🧬 evolves with')} ${PASSIVES[EVO[p.id].passive].name} Lv2+</div>`:'';
+    div.innerHTML=`${tag}${isNew?`<div class="new">${T('NEW!')}</div>`:''}<div class="ic">${def.icon}</div>
       <div class="nm">${def.name}</div>
-      <div class="lv">${isNew?'Level 1':'Level '+(p.lvl-1)+' → <b>'+p.lvl+'</b>'} ${'●'.repeat(p.lvl)}${'○'.repeat(5-p.lvl)}</div>
+      <div class="lv">${isNew?T('Level 1'):T('Level')+' '+(p.lvl-1)+' → <b>'+p.lvl+'</b>'} ${'●'.repeat(p.lvl)}${'○'.repeat(5-p.lvl)}</div>
       <div class="ds">${def.desc(p.lvl)}</div>${hint}`;
   }
   div.onclick=onClick;return div;
@@ -1132,7 +1345,7 @@ function openChest(big){
     applyChoice(p);got.push(p);
   }
   updateWrow();persist();
-  if(evolvedW)banner('🧬 '+EVO[evolvedW.id].name+'!','your '+WEAPONS[evolvedW.id].name+' has ascended');
+  if(evolvedW)banner('🧬 '+EVO[evolvedW.id].name+'!',T('your')+' '+WEAPONS[evolvedW.id].name+' '+T('has ascended'));
   const cc=$('chestCard');cc.innerHTML='';
   for(const p of got){const card=makeCard(p,()=>{});card.style.cursor='default';cc.appendChild(card);}
   spray(P.x,P.y,30,'#ffd23e',260);
@@ -1363,7 +1576,7 @@ function director(dt){
     }
   }
   if(G.t>=G.nextElite){G.nextElite+=75;
-    spawnEnemy('patricia');banner('📋 PATRICIA HAS FILED A COMPLAINT','elite spotted — she drops a chest');}
+    spawnEnemy('patricia');banner(T('📋 PATRICIA HAS FILED A COMPLAINT'),T('elite spotted — she drops a chest'));}
   if(G.bossIdx<BOSSES.length&&G.t>=BOSSES[G.bossIdx].at)spawnBoss(BOSSES[G.bossIdx++]);
   if(!G.karenSpawned&&G.t>=720)spawnKaren(); // the final complaint
   if(G.karenDeadT&&!G.won&&G.t-G.karenDeadT>1.3)winScreen();
@@ -1381,13 +1594,13 @@ function winScreen(){
   if(G.mowplus)ach('overgrown');
   bankGold();if(G.t>SAVE.best){SAVE.best=G.t;persist();}
   AU.win();
-  $('winStats').innerHTML=`You defeated <b>KAREN, FINAL FORM</b>${G.mowplus?' on <b style="color:#ff7a3c">MOW+</b>':''}. The lawn is finally quiet.<br>
-    💀 <b>${G.kills}</b> thwacked · 🪙 <b>${G.gold}</b> banked · Level <b>${P.lvl}</b>`+dailyLineHtml()+weaponStatsHtml();
+  $('winStats').innerHTML=`${T('You defeated')} <b>${KAREN.name}</b>${G.mowplus?' <b style="color:#ff7a3c">MOW+</b>':''}. ${T('The lawn is finally quiet.')}<br>
+    💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')} · ${T('Level')} <b>${P.lvl}</b>`+dailyLineHtml()+weaponStatsHtml();
   show('scrWin');G.state='won';
 }
 function weaponStatsHtml(){
   const rows=P.weapons.map(w=>({n:wName(w),i:wIcon(w),d:P.dmgBy[w.id]||0}));
-  if(P.dmgBy.dash)rows.push({n:'Dash Signature',i:'💨',d:P.dmgBy.dash});
+  if(P.dmgBy.dash)rows.push({n:T('Dash Signature'),i:'💨',d:P.dmgBy.dash});
   rows.sort((a,b)=>b.d-a.d);
   const max=Math.max(1,...rows.map(r=>r.d));
   return '<div style="margin-top:10px;font-size:12.5px;text-align:left;display:inline-block">'+rows.map(r=>
@@ -1402,8 +1615,9 @@ function update(dt){
   G.t+=dt;
   director(dt);
 
-  let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
-  let my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+  const KB=SAVE.settings.keys;
+  let mx=(keys[KB.right]||keys.arrowright?1:0)-(keys[KB.left]||keys.arrowleft?1:0);
+  let my=(keys[KB.down]||keys.arrowdown?1:0)-(keys[KB.up]||keys.arrowup?1:0);
   mx+=GP.x+TOUCH.x;my+=GP.y+TOUCH.y;
   { // rotate input by camera yaw: W is always "away from camera"
     const cy2=Math.cos(CAM.yaw),sy2=Math.sin(CAM.yaw);
@@ -1423,7 +1637,7 @@ function update(dt){
     if(G.heartT<=0){G.heartT=.85;AU.heart();
       $('redflash').style.opacity=.5;setTimeout(()=>{if(G.state==='play')$('redflash').style.opacity=0;},250);}
   }
-  if((keys[' ']||keys.shift||GP.dash||TOUCH.dash)&&P.dashCd<=0&&P.moving){
+  if((keys[KB.dash]||keys.shift||GP.dash||TOUCH.dash)&&P.dashCd<=0&&P.moving){
     const fl=P.char.dashKind==='flutter';
     P.dashT=fl?.34:.22;P.dashCdMax=fl?1.7:2.2;P.dashCd=P.dashCdMax;
     P.dashHits={};P.stealN=0;P.zoneDropT=0;AU.dash();}
@@ -1502,10 +1716,10 @@ function update(dt){
         else{e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
           if(e.aiT<=0){e.aiT=5;e.chargeT=.75;const LL=Math.hypot(P.x-e.x,P.y-e.y)||1;
             e.cdx=(P.x-e.x)/LL;e.cdy=(P.y-e.y)/LL;
-            popText(e.x,e.y,'CITATION!!','#ff6a6a',20,e.r*2+30);AU.bossCry();}}
+            popText(e.x,e.y,T('CITATION!!'),'#ff6a6a',20,e.r*2+30);AU.bossCry();}}
       }else if(e.type==='landlord'){
         e.x+=dx/L*e.spd*slow*dt;e.y+=dy/L*e.spd*slow*dt;
-        if(e.aiT<=0){e.aiT=7;popText(e.x,e.y,'RENT\'S DUE','#9f6',18,e.r*2+30);
+        if(e.aiT<=0){e.aiT=7;popText(e.x,e.y,T('RENT\'S DUE'),'#9f6',18,e.r*2+30);
           for(let k=0;k<4;k++)spawnEnemy('gnome',e.x+rand(-70,70),e.y+rand(-70,70));}
       }else if(e.type==='karen'){
         const frac=e.hp/e.maxHp,phase=frac>.6?1:frac>.3?2:3;
@@ -1514,7 +1728,7 @@ function update(dt){
         if(phase>e.lastPhase){ // phase break: untouchable, repositions, escalates
           e.lastPhase=phase;e.invT=1.4;
           spray(e.x,e.y,30,'#c0392b',300);AU.bossCry();G.shake=10;
-          popText(e.x,e.y,phase===2?'HOW DARE YOU':'I WANT EVERYONE FIRED','#ff6a6a',21,e.r*2+40);
+          popText(e.x,e.y,T(phase===2?'HOW DARE YOU':'I WANT EVERYONE FIRED'),'#ff6a6a',21,e.r*2+40);
           const a2=rand(TAU);e.x=P.x+Math.cos(a2)*420;e.y=P.y+Math.sin(a2)*420;
         }
         if(e.invT>0)e.invT-=dt;
@@ -1522,7 +1736,7 @@ function update(dt){
           spray(e.x,e.y,12,'#c0392b',200);
           const a2=rand(TAU);e.x=P.x+Math.cos(a2)*520;e.y=P.y+Math.sin(a2)*520;
           spray(e.x,e.y,12,'#c0392b',200);AU.bossCry();
-          popText(e.x,e.y,'WE\'RE NOT DONE','#ff6a6a',20,e.r*2+30);}
+          popText(e.x,e.y,T('WE\'RE NOT DONE'),'#ff6a6a',20,e.r*2+30);}
         if(e.chargeT>0){e.chargeT-=dt;e.x+=e.cdx*430*dt;e.y+=e.cdy*430*dt;}
         else{e.x+=dx/L*e.spd*spdMul*slow*dt;e.y+=dy/L*e.spd*spdMul*slow*dt;}
         if(e.aiT<=0){
@@ -1531,11 +1745,11 @@ function update(dt){
           if(phase>=3&&e.atk%3===0){ // MANAGER VOICE: radial scream
             for(let k=0;k<16;k++){const a=k/16*TAU+G.t;
               ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*175,vy:Math.sin(a)*175,r:7,dmg:16,life:6});}
-            popText(e.x,e.y,'MANAGER VOICE','#ff6a6a',20,e.r*2+30);
+            popText(e.x,e.y,T('MANAGER VOICE'),'#ff6a6a',20,e.r*2+30);
             AU.tone(300,90,.4,'sawtooth',.3);
           }else if(phase>=2&&e.atk%3===1&&enemies.filter(x=>x.elite).length<5){
             for(let k=0;k<2;k++)spawnEnemy('patricia',e.x+rand(-90,90),e.y+rand(-90,90));
-            popText(e.x,e.y,'HOA, ASSEMBLE!','#fc6',19,e.r*2+30);AU.bossCry();
+            popText(e.x,e.y,T('HOA, ASSEMBLE!'),'#fc6',19,e.r*2+30);AU.bossCry();
           }else{ // complaint barrage: aimed fan
             const base=Math.atan2(P.y-e.y,P.x-e.x);
             for(let k=0;k<5;k++){const a=base+(k-2)*.22;
@@ -1545,7 +1759,7 @@ function update(dt){
           if(phase===3&&e.atk%4===2){e.chargeT=.8;
             const LL=Math.hypot(P.x-e.x,P.y-e.y)||1;
             e.cdx=(P.x-e.x)/LL;e.cdy=(P.y-e.y)/LL;
-            popText(e.x,e.y,'I AM THE MANAGER','#ff6a6a',21,e.r*2+30);}
+            popText(e.x,e.y,T('I AM THE MANAGER'),'#ff6a6a',21,e.r*2+30);}
         }
         e.voiceT=(e.voiceT??6)-dt;
         if(e.voiceT<=0){e.voiceT=7;
@@ -1556,7 +1770,7 @@ function update(dt){
           spray(e.x,e.y,14,'#222',200);
           const a2=rand(TAU);e.x=P.x+Math.cos(a2)*480;e.y=P.y+Math.sin(a2)*480;
           spray(e.x,e.y,14,'#222',200);AU.bossCry();
-          popText(e.x,e.y,'FOUND YOU','#ff6a6a',20,e.r*2+30);}
+          popText(e.x,e.y,T('FOUND YOU'),'#ff6a6a',20,e.r*2+30);}
         if(e.aiT<=0){e.aiT=4;
           for(let k=0;k<14;k++){const a=k/14*TAU+G.t;
             ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*175,vy:Math.sin(a)*175,r:7,dmg:20,life:6});}
@@ -1609,9 +1823,9 @@ function update(dt){
       else if(pk.kind==='burger'){P.hp=Math.min(P.stats.maxHp,P.hp+40);AU.heal();
         popText(P.x,P.y,'+40','#7f7',18,50);}
       else if(pk.kind==='magnet'){for(const g of gems)g.pull=true;AU.heal();
-        popText(P.x,P.y,'FRIDGE MAGNET!','#6fd3ff',16,50);}
+        popText(P.x,P.y,T('FRIDGE MAGNET!'),'#6fd3ff',16,50);}
       else if(pk.kind==='phone'){P.hp=P.stats.maxHp;G.gold+=250;AU.chest();
-        popText(P.x,P.y,'EVIDENCE DELETED. +250g','#6fd3ff',19,56);}
+        popText(P.x,P.y,T('EVIDENCE DELETED. +250g'),'#6fd3ff',19,56);}
     }
   }
 
@@ -1664,7 +1878,7 @@ function updateHud(){
   hudT-=1/60;
   if(hudT<=0){hudT=.12;
     $('hptxt').textContent=Math.ceil(P.hp)+' / '+P.stats.maxHp;
-    $('lvltxt').textContent='LV '+P.lvl;
+    $('lvltxt').textContent=T('LV ')+P.lvl;
     $('timer').textContent=fmtT(G.t);
     $('score').innerHTML='🪙 '+G.gold+'<br>💀 '+G.kills;
   }
@@ -2521,7 +2735,7 @@ function drawTexts(){
     if(!dxo&&!dyo){dxo=nx;dyo=ny;}
     const ang=Math.atan2(-dyo,dxo);
     octx.globalAlpha=.95;
-    octx.font='17px "Segoe UI Emoji",sans-serif';
+    octx.font='17px "Segoe UI Emoji","Twemoji Mozilla",sans-serif';
     octx.fillText(p.icon,sx,sy+6);
     octx.save();octx.translate(sx,sy);octx.rotate(ang);
     octx.fillStyle=p.col;octx.strokeStyle='#000';octx.lineWidth=2;
@@ -2542,17 +2756,17 @@ function togglePause(){
     for(const w of P.weapons)s+=`${wIcon(w)} ${wName(w)} ${w.evo?'★':'Lv'+w.lvl} &nbsp; `;
     s+='<br>';
     for(const id in P.passives)s+=`${PASSIVES[id].icon} ${PASSIVES[id].name} Lv${P.passives[id]} &nbsp; `;
-    $('pauseBuild').innerHTML=s||'no build yet';
+    $('pauseBuild').innerHTML=s||T('no build yet');
     show('scrPause');}
   else if(G.state==='pause'){G.state='play';hideAll(['scrPause']);}
 }
 function refreshMenu(){
   const allAch=Object.keys(ACHS).every(id=>SAVE.ach[id]);
-  $('menuStats').innerHTML=`🪙 <b style="color:var(--gold)">${SAVE.gold}</b> banked`+
-    (SAVE.best?` &nbsp;·&nbsp; ⏱ best: <b>${fmtT(SAVE.best)}</b>`:'')+
-    ((SAVE.daily&&SAVE.daily.date===todayStr())?` &nbsp;·&nbsp; 📅 today: <b>${SAVE.daily.score}</b> 💀`:'')+
-    ((SAVE.streak.n||0)>=2?` &nbsp;·&nbsp; 🔥 <b>${SAVE.streak.n}</b>-day streak`:'')+
-    (allAch?` &nbsp;·&nbsp; <b style="color:var(--gold)">👑 LAWN LEGEND</b>`:'');
+  $('menuStats').innerHTML=`🪙 <b style="color:var(--gold)">${SAVE.gold}</b> ${T('banked2')==='banked2'?T('banked'):T('banked2')}`+
+    (SAVE.best?` &nbsp;·&nbsp; ${T('⏱ best:')} <b>${fmtT(SAVE.best)}</b>`:'')+
+    ((SAVE.daily&&SAVE.daily.date===todayStr())?` &nbsp;·&nbsp; ${T('📅 today:')} <b>${SAVE.daily.score}</b> 💀`:'')+
+    ((SAVE.streak.n||0)>=2?` &nbsp;·&nbsp; 🔥 <b>${SAVE.streak.n}</b>${T('-day streak')}`:'')+
+    (allAch?` &nbsp;·&nbsp; <b style="color:var(--gold)">${T('👑 LAWN LEGEND')}</b>`:'');
 }
 function buildSelect(){
   const mw=$('mapwrap');mw.innerHTML='';
@@ -2561,8 +2775,8 @@ function buildSelect(){
     const locked=!!(m.unlock&&!SAVE.ach[m.unlock]);
     const d=document.createElement('div');
     d.className='mapcard'+(SAVE.lastMap===m.id?' sel':'')+(locked?' locked':'');
-    d.innerHTML=`<div class="mi">${locked?'🔒':m.icon}</div><div><div class="mn">${locked?'???':m.name}</div>
-      <div class="md">${locked?'🔒 '+ACHS[m.unlock].desc+' to unlock':m.desc}</div></div>`;
+    d.innerHTML=`<div class="mi">${locked?'🔒':m.icon}</div><div><div class="mn">${locked?T('? ? ?'):m.name}</div>
+      <div class="md">${locked?'🔒 '+ACHS[m.unlock].desc+' '+T('to unlock'):m.desc}</div></div>`;
     d.onclick=()=>{
       if(locked){d.classList.remove('deny');void d.offsetWidth;d.classList.add('deny');AU.hurt();return;}
       SAVE.lastMap=m.id;persist();buildSelect();};
@@ -2572,8 +2786,8 @@ function buildSelect(){
     const won=!!SAVE.mowWins[SAVE.lastMap];
     const d=document.createElement('div');
     d.className='mapcard'+(won&&SAVE.mowplus?' sel':'')+(won?'':' locked');
-    d.innerHTML=`<div class="mi">🔥</div><div><div class="mn">MOW+ ${won&&SAVE.mowplus?'ON':'OFF'}</div>
-      <div class="md">${won?'+60% enemy HP · +15% speed · +60% gold · +30% XP':'🔒 win this map to unlock'}</div></div>`;
+    d.innerHTML=`<div class="mi">🔥</div><div><div class="mn">MOW+ ${T(won&&SAVE.mowplus?'ON':'OFF')}</div>
+      <div class="md">${won?'+60% '+T('enemy HP')+' · +15% '+T('speed')+' · +60% '+T('gold')+' · +30% '+T('XP'):'🔒 '+T('win this map to unlock')}</div></div>`;
     d.onclick=()=>{
       if(!won){d.classList.remove('deny');void d.offsetWidth;d.classList.add('deny');AU.hurt();return;}
       SAVE.mowplus=SAVE.mowplus?0:1;persist();buildSelect();};
@@ -2623,9 +2837,11 @@ $('bPlay').onclick=()=>{pendingDaily=false;$('selNote').classList.add('hide');
   hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
 $('bDaily').onclick=()=>{pendingDaily=true;
   const n=$('selNote');n.classList.remove('hide');
-  n.textContent=`📅 DAILY RUN · ${todayStr()} · Front Lawn · seeded — everyone fights the same waves · score = thwacks`;
+  n.textContent=`${T('📅 DAILY RUN')} · ${todayStr()} · ${T('Front Lawn')} · ${T('seeded — everyone fights the same waves · score = thwacks')}`;
   hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
 wireShare('bShare1');wireShare('bShare2');
+const STEAM_URL=''; // set to the Steam store URL once the Coming Soon page is live
+if(STEAM_URL&&!NATIVE){$('bWish').href=STEAM_URL;$('bWish').classList.remove('hide');}
 if(matchMedia&&matchMedia('(pointer:coarse)').matches)$('bFull').style.display='inline-block';
 $('bFull').onclick=()=>{try{
   if(document.fullscreenElement)document.exitFullscreen();
@@ -2638,53 +2854,53 @@ function buildTrophies(){
   let got=0,total=0;
   for(const id in ACHS){const A=ACHS[id],g=!!SAVE.ach[id];total++;if(g)got++;
     const d=document.createElement('div');d.className='trow '+(g?'got':'lock');
-    d.innerHTML=`<div class="ti">${g?A.icon:'🔒'}</div><div><div class="tn">${g?A.name:'? ? ?'}</div>
+    d.innerHTML=`<div class="ti">${g?A.icon:'🔒'}</div><div><div class="tn">${g?A.name:T('? ? ?')}</div>
       <div class="td">${A.desc}${A.unlocks?' · 🔓 '+A.unlocks:''}</div></div>`;
     w.appendChild(d);}
-  $('lifeStats').innerHTML=`🏆 ${got}/${total} · 🎮 ${SAVE.stats.runs||0} runs · 💀 ${SAVE.stats.totalKills.toLocaleString()} lifetime thwacks · `+
-    `🪙 ${SAVE.stats.totalGold.toLocaleString()} lifetime gold · ⭐ ${SAVE.stats.wins} wins · 🧬 ${SAVE.stats.evos} evolutions`;
+  $('lifeStats').innerHTML=`🏆 ${got}/${total} · 🎮 ${SAVE.stats.runs||0} ${T('runs')} · 💀 ${SAVE.stats.totalKills.toLocaleString()} ${T('lifetime thwacks')} · `+
+    `🪙 ${SAVE.stats.totalGold.toLocaleString()} ${T('lifetime gold')} · ⭐ ${SAVE.stats.wins} ${T('wins')} · 🧬 ${SAVE.stats.evos} ${T('evolutions')}`;
 }
 $('bTrophies').onclick=()=>{hideAll(['scrMenu']);buildTrophies();show('scrTrophies');G.state='trophies';};
 $('bBack4').onclick=()=>{hideAll(['scrTrophies']);refreshMenu();show('scrMenu');G.state='menu';};
 /* almanac */
 function almRow(em,title,desc,locked){
   return `<div class="trow ${locked?'lock':'got'}"><div class="ti">${locked?'🔒':em}</div>
-    <div><div class="tn">${locked?'? ? ?':title}</div><div class="td">${desc}</div></div></div>`;
+    <div><div class="tn">${locked?T('? ? ?'):title}</div><div class="td">${desc}</div></div></div>`;
 }
 function buildAlmanac(){
   const S=SAVE.seen,w=$('almRows');
-  let h='<div class="almHead">HOW TO PLAY</div>';
-  h+=almRow('🕹️','Survive 12 minutes','Move constantly. Weapons fire themselves. At 12:00, management arrives in person.',false);
-  h+=almRow('💎','Gems are XP','Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).',false);
-  h+=almRow('💨','Dash through danger','Dashing grants brief invincibility. Use it to pass through crowds and bullets.',false);
-  h+=almRow('🧬','Evolve your weapons','Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.',false);
-  h+=almRow('🪙','Gold is forever','Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.',false);
-  h+='<div class="almHead">DEFENDERS <small>each one dashes differently</small></div>';
+  let h=`<div class="almHead">${T('HOW TO PLAY')}</div>`;
+  h+=almRow('🕹️',T('🕹️ Survive 12 minutes').replace('🕹️ ',''),T('Move constantly. Weapons fire themselves. At 12:00, management arrives in person.'),false);
+  h+=almRow('💎',T('💎 Gems are XP').replace('💎 ',''),T('Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).'),false);
+  h+=almRow('💨',T('💨 Dash through danger').replace('💨 ',''),T('Dashing grants brief invincibility. Use it to pass through crowds and bullets.'),false);
+  h+=almRow('🧬',T('🧬 Evolve your weapons').replace('🧬 ',''),T('Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.'),false);
+  h+=almRow('🪙',T('🪙 Gold is forever').replace('🪙 ',''),T('Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.'),false);
+  h+=`<div class="almHead">${T('DEFENDERS')} <small>${T('each one dashes differently')}</small></div>`;
   for(const c of CHARS){
     const locked=!!(c.unlock&&!SAVE.ach[c.unlock.ach]);
     h+=almRow(c.em,c.name+' — '+c.sub,locked?c.unlock.hint:(c.blurb+'<br>'+c.dash),locked);
   }
-  h+='<div class="almHead">ARSENAL <small>discovered by using each weapon</small></div>';
+  h+=`<div class="almHead">${T('ARSENAL')} <small>${T('discovered by using each weapon')}</small></div>`;
   for(const id in WEAPONS){
     const seen=!!S['w_'+id],evoSeen=!!S['v_'+id],E=EVO[id];
     h+=almRow(WEAPONS[id].icon,WEAPONS[id].name,
-      seen?(evoSeen?`evolves into <b style="color:var(--gold)">${E.name}</b> ${E.icon}`
-                   :`pairs with ${PASSIVES[E.passive].name} · evolution undiscovered`)
-          :'find it in a level-up',!seen);
+      seen?(evoSeen?`${T('evolves into')} <b style="color:var(--gold)">${E.name}</b> ${E.icon}`
+                   :`${T('pairs with')} ${PASSIVES[E.passive].name} ${T('· evolution undiscovered')}`)
+          :T('find it in a level-up'),!seen);
   }
-  h+='<div class="almHead">RESIDENTS <small>discovered on sight</small></div>';
+  h+=`<div class="almHead">${T('RESIDENTS')} <small>${T('discovered on sight')}</small></div>`;
   for(const id in ENEMY){
     const d=ENEMY[id],seen=!!S['e_'+id];
-    h+=almRow(d.em,d.title,seen?`${d.lore} · ${d.hp} HP · ${d.dmg} dmg`:'not yet encountered',!seen);
+    h+=almRow(d.em,d.title,seen?`${d.lore} · ${d.hp} HP · ${d.dmg} dmg`:T('not yet encountered'),!seen);
   }
-  h+='<div class="almHead">MANAGEMENT <small>they know where you live</small></div>';
-  const MGMT=[['hoa','⚖️','HOWARD, HOA PRESIDENT','He measured your grass. It\'s 0.4cm too tall.'],
-    ['landlord','🎩','THE LANDLORD','Here to keep the deposit. All of it.'],
-    ['gentri','🏗️','GENTRIFITRON 9000','BEEP BOOP. THIS LAWN IS NOW A LUXURY CONDO.'],
-    ['karen','📱','KAREN, FINAL FORM','She has been asked to leave. She has declined.'],
-    ['inspector','🕴️','THE INSPECTOR','Your lawn\'s final audit. He has questions.']];
+  h+=`<div class="almHead">${T('MANAGEMENT')} <small>${T('they know where you live')}</small></div>`;
+  const MGMT=[['hoa','⚖️',BOSSES[0].name,BOSSES[0].sub],
+    ['landlord','🎩',BOSSES[1].name,BOSSES[1].sub],
+    ['gentri','🏗️',BOSSES[2].name,BOSSES[2].sub],
+    ['karen','📱',KAREN.name,KAREN.sub],
+    ['inspector','🕴️',INSPECTOR.name,INSPECTOR.sub]];
   for(const [id,em,title,lore] of MGMT)
-    h+=almRow(em,title,S['b_'+id]?lore:'not yet encountered',!S['b_'+id]);
+    h+=almRow(em,title,S['b_'+id]?lore:T('not yet encountered'),!S['b_'+id]);
   w.innerHTML=h;
 }
 $('bAlmanac').onclick=()=>{hideAll(['scrMenu']);buildAlmanac();show('scrAlmanac');G.state='almanac';};
@@ -2706,7 +2922,7 @@ function openSettings(from){
   hideAll(['scrMenu','scrPause']);
   $('sMusic').value=SAVE.settings.music*100;$('sSfx').value=SAVE.settings.sfx*100;
   $('sSens').value=(SAVE.settings.sens||1)*100;
-  setBtnTxt();show('scrSettings');G.state='settings';
+  setBtnTxt();refreshKb();show('scrSettings');G.state='settings';
 }
 $('bSettings').onclick=()=>openSettings('menu');
 $('bSettings2').onclick=()=>openSettings('pause');
@@ -2721,6 +2937,25 @@ $('sCrt').onclick=()=>{SAVE.settings.crt=SAVE.settings.crt?0:1;persist();setBtnT
 $('sDmg').onclick=()=>{SAVE.settings.dmgnum=SAVE.settings.dmgnum?0:1;persist();setBtnTxt();};
 $('sRes').onclick=()=>{const o=[220,270,360],i=o.indexOf(SAVE.settings.res||270);
   SAVE.settings.res=o[(i+1)%3];persist();setBtnTxt();resize();};
+$('sLang').textContent=LANG==='zh'?'中文':'ENGLISH';
+$('sLang').onclick=()=>{SAVE.settings.lang=LANG==='zh'?'en':'zh';persist();location.reload();};
+/* key rebinding */
+function kbName(k){return k===' '?'SPACE':k.length===1?k.toUpperCase():k.toUpperCase().slice(0,8);}
+function refreshKb(){
+  document.querySelectorAll('.kb').forEach(b=>{
+    b.textContent=kbCapture===b.dataset.slot?'PRESS…':kbName(SAVE.settings.keys[b.dataset.slot]);
+  });
+}
+document.querySelectorAll('.kb').forEach(b=>{
+  b.onclick=()=>{kbCapture=b.dataset.slot;refreshKb();};
+});
+$('kbReset').onclick=()=>{SAVE.settings.keys={...KEYDEF};persist();refreshKb();};
+if(NATIVE){ // desktop build: window-mode toggle (F11 also works)
+  $('rowWin').classList.remove('hide');
+  const winTxt=()=>{$('sWin').textContent=NATIVE.getFullscreen()?'FULLSCREEN':'WINDOWED';};
+  winTxt();
+  $('sWin').onclick=()=>{NATIVE.setFullscreen(!NATIVE.getFullscreen());setTimeout(winTxt,120);};
+}
 $('sExport').onclick=()=>{
   const code='THWACK64:'+btoa(unescape(encodeURIComponent(JSON.stringify(SAVE))));
   const b=$('sExport');
@@ -2730,15 +2965,33 @@ $('sExport').onclick=()=>{
   else b.textContent='FAILED';
   setTimeout(()=>b.textContent='EXPORT',1800);
 };
-$('sImport').onclick=()=>{
-  const txt=prompt('Paste your THWACK64 save code:');
+/* in-game modal (no prompt/alert — those look broken in the desktop shell) */
+function gameModal(opts){ // {title,text,input:bool} -> Promise<string|null>
+  return new Promise(res=>{
+    $('modalTitle').textContent=opts.title||'';
+    $('modalText').innerHTML=opts.text||'';
+    const inp=$('modalInput');
+    inp.classList.toggle('hide',!opts.input);inp.value='';
+    $('modalCancel').style.display=opts.cancel===false?'none':'inline-block';
+    show('scrModal');
+    if(opts.input)setTimeout(()=>inp.focus(),60);
+    const done=v=>{hideAll(['scrModal']);$('modalOk').onclick=null;$('modalCancel').onclick=null;res(v);};
+    $('modalOk').onclick=()=>done(opts.input?inp.value:'ok');
+    $('modalCancel').onclick=()=>done(null);
+  });
+}
+$('sImport').onclick=async()=>{
+  const txt=await gameModal({title:'IMPORT SAVE',text:'Paste your THWACK64 save code below.',input:true});
   if(!txt)return;
   try{
     const obj=JSON.parse(decodeURIComponent(escape(atob(txt.trim().replace(/^THWACK64:/,'')))));
     if(!obj||typeof obj!=='object'||!obj.upg)throw 0;
     localStorage.setItem('thwackalypse',JSON.stringify(obj));
+    if(NATIVE)NATIVE.saveSave(JSON.stringify(obj));
     location.reload();
-  }catch(e){alert('That save code didn\'t parse. The lawn rejects it. 🩴');}
+  }catch(e){
+    gameModal({title:'INVALID CODE',text:'That save code didn\'t parse. The lawn rejects it. 🩴',cancel:false});
+  }
 };
 $('crt').style.display=SAVE.settings.crt?'block':'none';
 $('bBack1').onclick=()=>{hideAll(['scrSelect']);refreshMenu();show('scrMenu');G.state='menu';};
@@ -2748,7 +3001,7 @@ $('bMute').onclick=toggleMute;
 $('bQuit').onclick=()=>{bankGold();hideAll(['scrPause','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
 $('bRetry').onclick=()=>{hideAll(['scrDead']);newRun(P.char.id);};
 $('bMenu1').onclick=()=>{hideAll(['scrDead','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
-$('bGoOn').onclick=()=>{hideAll(['scrWin']);G.state='play';banner('ENDLESS MODE','how long can the lawn last?');};
+$('bGoOn').onclick=()=>{hideAll(['scrWin']);G.state='play';banner(T('ENDLESS MODE'),T('how long can the lawn last?'));};
 $('bMenu2').onclick=()=>{hideAll(['scrWin','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
 
 /* ============================== GAMEPAD ============================== */
@@ -2799,6 +3052,42 @@ function frame(now){
   if(G.state==='select')drawPortraits();
   render3d();drawTexts();
 }
+/* static HTML translation pass */
+Object.assign(ZH,{
+  '🕹️ Survive 12 minutes':'🕹️ 活过 12 分钟',
+  'Move constantly. Weapons fire themselves. At 12:00, management arrives in person.':'保持移动。武器会自动开火。12:00 时，管理层将亲自登门。',
+  '💎 Gems are XP':'💎 宝石就是经验',
+  'Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).':'击杀敌人，捡起宝石，每次升级三选一。按 R 重抽（每局 2 次）。',
+  '💨 Dash through danger':'💨 冲刺穿越危险',
+  'Dashing grants brief invincibility. Use it to pass through crowds and bullets.':'冲刺期间短暂无敌。用它穿过人群和弹幕。',
+  '🧬 Evolve your weapons':'🧬 进化你的武器',
+  'Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.':'武器升到 5 级，搭配的被动达到 2 级以上，然后开任意宝箱。精英和头目会掉宝箱。',
+  '🪙 Gold is forever':'🪙 金币是永久的',
+  'Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.':'在草坪商店购买永久升级。贪婪能自己回本。',
+  'win this map to unlock':'赢下本图解锁','to unlock':'解锁',
+  'enemy HP':'敌人生命','speed':'速度','gold':'金币','XP':'经验',
+});
+function applyLangHtml(){
+  if(LANG!=='zh')return;
+  const set=(id,txt)=>{const el=$(id);if(el)el.textContent=txt;};
+  ['bPlay','bDaily','bShop','bTrophies','bAlmanac','bSettings','bResume','bQuit','bRetry',
+   'bMenu1','bMenu2','bGoOn','bShare1','bShare2','bChestOk','bFull','modalOk','modalCancel',
+   'bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
+    const el=$(id);if(el)el.textContent=T(el.textContent.trim());});
+  document.querySelectorAll('.setrow .sl').forEach(el=>{el.textContent=T(el.textContent.trim());});
+  document.querySelectorAll('.screen h2.bigword').forEach(el=>{el.textContent=T(el.textContent.trim());});
+  document.querySelectorAll('#scrLevel .small, #scrLevel div').forEach(el=>{
+    if(el.textContent.trim()==='pick one — the lawn depends on it')el.textContent=T(el.textContent.trim());});
+  set('dashlab',T('DASH [SPACE]'));
+  const tag=document.querySelector('#scrMenu .tag');
+  if(tag)tag.textContent=T(tag.textContent.trim());
+  $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
+  const ctl=$('ctlLine');
+  if(ctl&&!document.body.classList.contains('touch'))
+    ctl.innerHTML='<kbd>WASD</kbd> 移动 · 🖱 视角（点击捕获） · <kbd>空格</kbd> 冲刺 · <kbd>P</kbd> 暂停 · <kbd>M</kbd> 静音 · 🎮 手柄 · 📱 触屏';
+  $('rotateHint').textContent='📱 旋转至横屏体验完整草坪';
+}
+applyLangHtml();
 let errShown=false;
 addEventListener('error',e=>{ // one-shot bug toast so players can report crashes
   if(errShown)return;errShown=true;

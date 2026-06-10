@@ -1,0 +1,51 @@
+THWACKALYPSE 64 — License & Third-Party Notices
+=================================================
+
+GAME CODE, ART, AUDIO, NAMES & TEXT
+-----------------------------------
+Copyright (c) 2026 the THWACKALYPSE 64 author. All rights reserved.
+All game code, procedurally-built 3D art, synthesized audio, character
+names, and written content in index.html are original works.
+
+THIRD-PARTY COMPONENTS
+----------------------
+
+1) three.js r158 (three.min.js)
+   https://threejs.org
+   The MIT License
+
+   Copyright (c) 2010-2023 Three.js Authors
+
+   Permission is hereby granted, free of charge, to any person obtaining
+   a copy of this software and associated documentation files (the
+   "Software"), to deal in the Software without restriction, including
+   without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to
+   permit persons to whom the Software is furnished to do so, subject to
+   the following conditions:
+
+   The above copyright notice and this permission notice shall be
+   included in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+2) Twemoji Mozilla color emoji font (twemoji.ttf)
+   https://github.com/mozilla/twemoji-colr
+   Emoji artwork: Copyright Twitter, Inc. and other contributors,
+   licensed under CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+   Font build/packaging: Copyright Mozilla Foundation, licensed under
+   the Apache License 2.0. Used as a fallback color-emoji font on
+   systems without a native color emoji font (e.g. Linux / SteamOS).
+
+3) Electron and steamworks.js (steam/ desktop shell only)
+   Electron: MIT License — https://github.com/electron/electron
+   steamworks.js: MIT License — https://github.com/ceifa/steamworks.js
+   These are build/runtime dependencies of the desktop distribution and
+   are not redistributed in the web build.

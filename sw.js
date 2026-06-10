@@ -1,6 +1,6 @@
 /* THWACKALYPSE 64 service worker — cache-first so the lawn loads offline */
-const CACHE = 'thwack-v2.1.0';
-const ASSETS = ['./', './index.html', './three.min.js', './manifest.webmanifest',
+const CACHE = 'thwack-v2.2.0';
+const ASSETS = ['./', './index.html', './three.min.js', './twemoji.ttf', './manifest.webmanifest',
   './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

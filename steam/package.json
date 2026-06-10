@@ -1,0 +1,36 @@
+{
+  "name": "thwackalypse64",
+  "productName": "THWACKALYPSE 64",
+  "version": "2.2.0",
+  "description": "A 100% legally distinct low-poly bullet heaven. Defend your lawn.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "dist": "electron-builder --win --dir",
+    "dist:all": "electron-builder -wl"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.4.0"
+  },
+  "build": {
+    "appId": "com.thwackalypse.game",
+    "productName": "THWACKALYPSE 64",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "steam_appid.txt",
+      "node_modules/steamworks.js/**",
+      { "from": "..", "to": "app", "filter": ["index.html", "three.min.js", "twemoji.ttf", "icon-192.png", "icon-512.png", "LICENSE"] }
+    ],
+    "asarUnpack": ["node_modules/steamworks.js/**"],
+    "win": { "target": "nsis", "icon": "../icon-512.png" },
+    "linux": { "target": "AppImage", "icon": "../icon-512.png", "category": "Game" }
+  }
+}
