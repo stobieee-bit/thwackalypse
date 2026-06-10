@@ -18,6 +18,7 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 - **📅 Daily Run** — date-seeded so everyone fights the same waves; chase your best thwack count and share it
 - **📖 The Almanac** — how-to-play guide plus a discovery codex: weapons, evolutions, residents, and management stay "???" until you meet them
 - Daily streaks 🔥, Head Start shop tier (begin runs with free picks), fullscreen on mobile, LAWN LEGEND crown at 100% trophies
+- Save export/import codes, reduced-motion friendly defaults, crash toast for easy bug reports
 - 12 achievements with a trophies gallery, permanent meta shop, persistent saves
 - **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
 - **Installable PWA** — add it to your home screen; plays fully offline after first load

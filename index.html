@@ -77,6 +77,9 @@
   .setrow .sv{width:46px;color:var(--gold);font-weight:800;}
   .setrow input[type=range]{width:170px;accent-color:#9fff4a;}
   .btn.mini{font-size:15px;padding:7px 18px;margin:0;width:90px;}
+  .btn.sm{font-size:16px;padding:9px 18px;margin:5px;}
+  #xpwrap.flash{animation:xpf .55s ease-out;}
+  @keyframes xpf{0%{box-shadow:0 0 0 rgba(159,255,74,0)}35%{box-shadow:0 4px 22px rgba(159,255,74,.95)}100%{box-shadow:0 0 0 rgba(159,255,74,0)}}
   #trophyRows{display:flex;flex-direction:column;gap:6px;max-height:56vh;overflow-y:auto;padding:0 8px;}
   #almRows{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow-y:auto;padding:0 8px;}
   .almHead{font-family:Impact,"Arial Black",sans-serif;font-size:19px;color:var(--lime);letter-spacing:1px;
@@ -253,16 +256,18 @@
   <div style="margin-top:18px">
     <button class="btn" id="bPlay">PLAY</button>
     <button class="btn gold" id="bDaily">📅 DAILY RUN</button>
-    <button class="btn gold" id="bShop">LAWN SHOP</button>
-    <button class="btn alt" id="bTrophies">TROPHIES</button>
-    <button class="btn alt" id="bAlmanac">ALMANAC</button>
-    <button class="btn alt" id="bSettings">SETTINGS</button>
+  </div>
+  <div>
+    <button class="btn gold sm" id="bShop">LAWN SHOP</button>
+    <button class="btn alt sm" id="bTrophies">TROPHIES</button>
+    <button class="btn alt sm" id="bAlmanac">ALMANAC</button>
+    <button class="btn alt sm" id="bSettings">SETTINGS</button>
   </div>
   <div class="stats-line" id="menuStats"></div>
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.9 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.0 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -315,6 +320,9 @@
   <div class="setrow"><span class="sl">🔢 Damage numbers</span><button class="btn mini" id="sDmg"></button></div>
   <div class="setrow"><span class="sl">🎥 Camera speed</span><input type="range" id="sSens" min="40" max="200"><span class="sv" id="sSensV"></span></div>
   <div class="setrow"><span class="sl">🖥 Sharpness</span><button class="btn mini" id="sRes"></button></div>
+  <div class="setrow"><span class="sl">💾 Save data</span>
+    <button class="btn mini" id="sExport">EXPORT</button>
+    <button class="btn mini" id="sImport">IMPORT</button></div>
   <button class="btn alt" id="bBack3" style="margin-top:14px">BACK</button>
 </div>
 
@@ -384,6 +392,11 @@ try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
     settings:{...SAVE_DEF.settings,...(s.settings||{})},stats:{...SAVE_DEF.stats,...(s.stats||{})}};}
 }catch(e){}
 function persist(){try{localStorage.setItem('thwackalypse',JSON.stringify(SAVE));}catch(e){}}
+/* accessibility: first boot on a reduced-motion system starts calm */
+if(!localStorage.getItem('thwackalypse')&&typeof matchMedia==='function'
+  &&matchMedia('(prefers-reduced-motion: reduce)').matches){
+  SAVE.settings.shake=0;SAVE.settings.crt=0;
+}
 
 /* ============================== AUDIO ============================== */
 const AU={
@@ -1019,8 +1032,10 @@ function popText(x,y,str,col='#fff',size=15,h=36){
 /* ============================== XP / LEVELS ============================== */
 function gainXp(n){
   P.xp+=n;
-  while(P.xp>=P.xpNext){P.xp-=P.xpNext;P.lvl++;P.pend++;
+  let leveled=false;
+  while(P.xp>=P.xpNext){P.xp-=P.xpNext;P.lvl++;P.pend++;leveled=true;
     P.xpNext=Math.floor(12+(P.lvl-1)*9+Math.pow(P.lvl-1,1.8)*1.7);}
+  if(leveled){const w=$('xpwrap');w.classList.remove('flash');void w.offsetWidth;w.classList.add('flash');}
 }
 function buildPool(){
   const pool=[];
@@ -1084,7 +1099,9 @@ function applyChoice(p){
 function closeLevelUp(){
   hideAll(['scrLevel']);P.pend--;
   if(P.pend>0)openLevelUp();
-  else {G.state='play';relock();}
+  else {G.state='play';relock();
+    rings.push({x:P.x,y:P.y,r:8,max:120,life:.4,col:0x9fff4a});
+    spray(P.x,P.y,14,'#9fff4a',220);}
 }
 function evoReady(){
   return P.weapons.find(w=>!w.evo&&w.lvl>=5&&(P.passives[EVO[w.id].passive]||0)>=2);
@@ -1628,7 +1645,8 @@ function updateHud(){
   $('dashfill').style.background=P.dashCd<=0?'#6fd3ff':'#39637a';
   $('btnDash').classList.toggle('cd',P.dashCd>0);
   if(G.boss&&!G.boss.dead){$('bosswrap').style.display='block';
-    $('bossname').textContent=G.boss.name;
+    const bem={hoa:'⚖️',landlord:'🎩',gentri:'🏗️',karen:'📱',inspector:'🕴️'}[G.boss.type]||'☠️';
+    $('bossname').textContent=bem+' '+G.boss.name;
     $('bossfill').style.width=clamp(G.boss.hp/G.boss.maxHp*100,0,100)+'%';
   }else $('bosswrap').style.display='none';
   hudT-=1/60;
@@ -2449,7 +2467,7 @@ function render3d(){
     const m=ringMeshes[i];
     if(i<rings.length){const r=rings[i];
       m.visible=true;m.position.set(r.x,2.2,r.y);
-      m.material.color.set(r.evo?0xff7a3c:0xffd23e);
+      m.material.color.set(r.col||(r.evo?0xff7a3c:0xffd23e));
       m.scale.set(r.r,1,r.r);m.material.opacity=Math.max(0,r.life*2);
     }else m.visible=false;
   }
@@ -2691,6 +2709,25 @@ $('sCrt').onclick=()=>{SAVE.settings.crt=SAVE.settings.crt?0:1;persist();setBtnT
 $('sDmg').onclick=()=>{SAVE.settings.dmgnum=SAVE.settings.dmgnum?0:1;persist();setBtnTxt();};
 $('sRes').onclick=()=>{const o=[220,270,360],i=o.indexOf(SAVE.settings.res||270);
   SAVE.settings.res=o[(i+1)%3];persist();setBtnTxt();resize();};
+$('sExport').onclick=()=>{
+  const code='THWACK64:'+btoa(unescape(encodeURIComponent(JSON.stringify(SAVE))));
+  const b=$('sExport');
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(code).then(()=>{b.textContent='COPIED!';},
+      ()=>{b.textContent='FAILED';});
+  else b.textContent='FAILED';
+  setTimeout(()=>b.textContent='EXPORT',1800);
+};
+$('sImport').onclick=()=>{
+  const txt=prompt('Paste your THWACK64 save code:');
+  if(!txt)return;
+  try{
+    const obj=JSON.parse(decodeURIComponent(escape(atob(txt.trim().replace(/^THWACK64:/,'')))));
+    if(!obj||typeof obj!=='object'||!obj.upg)throw 0;
+    localStorage.setItem('thwackalypse',JSON.stringify(obj));
+    location.reload();
+  }catch(e){alert('That save code didn\'t parse. The lawn rejects it. 🩴');}
+};
 $('crt').style.display=SAVE.settings.crt?'block':'none';
 $('bBack1').onclick=()=>{hideAll(['scrSelect']);refreshMenu();show('scrMenu');G.state='menu';};
 $('bBack2').onclick=()=>{hideAll(['scrShop']);refreshMenu();show('scrMenu');G.state='menu';};
@@ -2750,6 +2787,16 @@ function frame(now){
   if(G.state==='select')drawPortraits();
   render3d();drawTexts();
 }
+let errShown=false;
+addEventListener('error',e=>{ // one-shot bug toast so players can report crashes
+  if(errShown)return;errShown=true;
+  try{
+    const d=document.createElement('div');d.className='toast';
+    d.innerHTML=`<div class="ti">🐛</div><div><div class="tn">Something hiccuped</div>
+      <div class="td">${String(e.message||'unknown error').slice(0,90)}</div></div>`;
+    $('toasts').appendChild(d);setTimeout(()=>d.remove(),7000);
+  }catch(_){}
+});
 refreshMenu();
 requestAnimationFrame(frame);
 
