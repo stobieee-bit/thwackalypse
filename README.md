@@ -9,10 +9,11 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 ## Features
 
 - 7 playable defenders (2 unlockable) — Gerald the Lawn Dad, Babushka, DJ Gobbo, Capt. Briney, Moth Lad, MOWBOT, and TRASH PANDA
-- 8 weapons × 5 levels, each with a **unique evolution** (BRUNCHNADO, MURDER HORNETS, DROP THE SUN…)
+- 10 weapons × 5 levels, each with a **unique evolution** (BRUNCHNADO, MURDER HORNETS, DROP THE SUN, CATEGORY 5, GNOME LEGION…) — including deployable golden gnome turrets and a knockback leaf blower
+- **MOW+ hard mode** per map (win it once to unlock), kill-combo counter, **Second Wind** revive in the shop, per-character best times
 - 8 passives, 8 enemy types, 3 bosses, horde events, elite chests
 - 3 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One
-- 11 achievements with a trophies gallery, permanent meta shop, persistent saves
+- 12 achievements with a trophies gallery, permanent meta shop, persistent saves
 - **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
 - **Installable PWA** — add it to your home screen; plays fully offline after first load
 - **Full 360° third-person camera** — mouse-look (click to capture), drag, scroll zoom, right-stick, or right-thumb
