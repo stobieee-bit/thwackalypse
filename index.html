@@ -259,9 +259,10 @@
     <button class="btn alt" id="bSettings">SETTINGS</button>
   </div>
   <div class="stats-line" id="menuStats"></div>
+  <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v1.7 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v1.8 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -370,7 +371,8 @@ const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 const $=id=>document.getElementById(id);
 
 /* ============================== SAVE ============================== */
-const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0},ach:{},lastMap:'lawn',
+const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0,start:0},ach:{},lastMap:'lawn',
+  streak:{date:'',n:0},
   mowplus:0,mowWins:{},bests:{},daily:null,seen:{},
   settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
@@ -378,6 +380,7 @@ let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
 try{const s=JSON.parse(localStorage.getItem('thwackalypse'));
   if(s){SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
     mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,seen:{...(s.seen||{})},
+    streak:s.streak||{date:'',n:0},
     settings:{...SAVE_DEF.settings,...(s.settings||{})},stats:{...SAVE_DEF.stats,...(s.stats||{})}};}
 }catch(e){}
 function persist(){try{localStorage.setItem('thwackalypse',JSON.stringify(SAVE));}catch(e){}}
@@ -442,7 +445,7 @@ const AU={
     this.tone(f,f*.96,.32,'sawtooth',.12,this.ctx.currentTime+i*.24));},
   sched(){
     if(!this.ctx)return;
-    const inRun=['play','levelup','chest','pause'].includes(G.state);
+    const inRun=['play','levelup','chest','pause','won','dead'].includes(G.state);
     const inMenu=['menu','select','shop','settings','trophies','almanac'].includes(G.state);
     const musicOn=!this.muted&&(inRun||inMenu);
     const spb=60/138/4;
@@ -784,6 +787,8 @@ const SHOP=[
   {id:'greed',icon:'🤑',name:'Greed',desc:'+12% gold earned per tier, forever.'},
   {id:'revive',icon:'🪦',name:'Second Wind',desc:'Cheat death once per run. The lawn isn\'t done with you.',
    costs:[750],max:1},
+  {id:'start',icon:'🚀',name:'Head Start',desc:'Begin every run with a free upgrade pick per tier.',
+   costs:[900,1800,3200],max:3},
 ];
 const SHOPCOST=[60,140,260,420,650];
 const SPAWN_R=720;
@@ -817,7 +822,13 @@ let uidc=1;
 let pendingDaily=false;
 function newRun(charId){
   const c=CHARS.find(x=>x.id===charId);
-  if(pendingDaily){applyMap(MAPS[0]);setSeed(dailySeed());}
+  if(pendingDaily){applyMap(MAPS[0]);setSeed(dailySeed());
+    const t=todayStr();
+    if(SAVE.streak.date!==t){ // one streak tick per day, kept alive by playing daily
+      const y=new Date();y.setDate(y.getDate()-1);
+      const ystr=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+      SAVE.streak={date:t,n:SAVE.streak.date===ystr?(SAVE.streak.n||0)+1:1};
+    }}
   else{clearSeed();applyMap(MAPS.find(m=>m.id===SAVE.lastMap)||MAPS[0]);}
   SAVE.stats.runs=(SAVE.stats.runs||0)+1;persist();
   P={char:c,x:0,y:0,r:13,hp:0,lvl:1,xp:0,xpNext:14,pend:0,
@@ -825,6 +836,7 @@ function newRun(charId){
     weapons:[],passives:{},stats:null,uid:'P',dmgBy:{}};
   addWeapon(c.start);
   recompute();P.hp=P.stats.maxHp;
+  P.pend+=SAVE.upg.start||0; // Head Start: free picks before the first gnome arrives
   enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];
   Object.assign(G,{t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
     kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,boss:null,dying:false,
@@ -871,6 +883,7 @@ function nearestEnemy(x,y,maxD=520){
 function fireBullet(o){bullets.push(Object.assign({pierce:1,life:2,r:8,kind:'toast',hitMap:null,rot:0,rotS:0},o));}
 
 function hitEnemy(e,dmg,opts={}){
+  if(e.invT>0){if(RNG()<.12)popText(e.x,e.y,'DENIED','#9ab59a',14,e.r+30);return;}
   let crit=RNG()<(P.stats.crit+(opts.critBonus||0));
   let d=dmg*P.stats.dmg*(crit?2:1);
   d=Math.round(d*rand(.92,1.08));
@@ -1432,6 +1445,14 @@ function update(dt){
       }else if(e.type==='karen'){
         const frac=e.hp/e.maxHp,phase=frac>.6?1:frac>.3?2:3;
         const spdMul=phase===3?1.5:phase===2?1.2:1;
+        if(e.lastPhase===undefined)e.lastPhase=1;
+        if(phase>e.lastPhase){ // phase break: untouchable, repositions, escalates
+          e.lastPhase=phase;e.invT=1.4;
+          spray(e.x,e.y,30,'#c0392b',300);AU.bossCry();G.shake=10;
+          popText(e.x,e.y,phase===2?'HOW DARE YOU':'I WANT EVERYONE FIRED','#ff6a6a',21,e.r*2+40);
+          const a2=rand(TAU);e.x=P.x+Math.cos(a2)*420;e.y=P.y+Math.sin(a2)*420;
+        }
+        if(e.invT>0)e.invT-=dt;
         if(L>800){ // she WILL speak to you
           spray(e.x,e.y,12,'#c0392b',200);
           const a2=rand(TAU);e.x=P.x+Math.cos(a2)*520;e.y=P.y+Math.sin(a2)*520;
@@ -2445,9 +2466,12 @@ function togglePause(){
   else if(G.state==='pause'){G.state='play';hideAll(['scrPause']);}
 }
 function refreshMenu(){
+  const allAch=Object.keys(ACHS).every(id=>SAVE.ach[id]);
   $('menuStats').innerHTML=`🪙 <b style="color:var(--gold)">${SAVE.gold}</b> banked`+
     (SAVE.best?` &nbsp;·&nbsp; ⏱ best: <b>${fmtT(SAVE.best)}</b>`:'')+
-    ((SAVE.daily&&SAVE.daily.date===todayStr())?` &nbsp;·&nbsp; 📅 today: <b>${SAVE.daily.score}</b> 💀`:'');
+    ((SAVE.daily&&SAVE.daily.date===todayStr())?` &nbsp;·&nbsp; 📅 today: <b>${SAVE.daily.score}</b> 💀`:'')+
+    ((SAVE.streak.n||0)>=2?` &nbsp;·&nbsp; 🔥 <b>${SAVE.streak.n}</b>-day streak`:'')+
+    (allAch?` &nbsp;·&nbsp; <b style="color:var(--gold)">👑 LAWN LEGEND</b>`:'');
 }
 function buildSelect(){
   const mw=$('mapwrap');mw.innerHTML='';
@@ -2521,6 +2545,11 @@ $('bDaily').onclick=()=>{pendingDaily=true;
   n.textContent=`📅 DAILY RUN · ${todayStr()} · Front Lawn · seeded — everyone fights the same waves · score = thwacks`;
   hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
 wireShare('bShare1');wireShare('bShare2');
+if(matchMedia&&matchMedia('(pointer:coarse)').matches)$('bFull').style.display='inline-block';
+$('bFull').onclick=()=>{try{
+  if(document.fullscreenElement)document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+}catch(e){}};
 $('bShop').onclick=()=>{hideAll(['scrMenu']);buildShop();show('scrShop');G.state='shop';};
 /* trophies */
 function buildTrophies(){
