@@ -41,7 +41,7 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 
 ## Tech
 
-One self-contained `index.html` (~2,200 lines, no build step) plus a vendored copy of [three.js](https://threejs.org) r158 (MIT). All art is code-built low-poly geometry, all audio is synthesized at runtime, all names and characters are original.
+One self-contained `index.html` (~3,600 lines, no build step) plus a vendored copy of [three.js](https://threejs.org) r158 (MIT). All art is code-built low-poly geometry, all audio is synthesized at runtime, all names and characters are original. A thin Electron shell in `steam/` packages the same file for desktop/Steam.
 
 Game mechanics are genre conventions (mechanics aren't copyrightable); every expressive element here — name, cast, art, music, text, code — is original work.
 

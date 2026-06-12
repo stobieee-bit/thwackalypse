@@ -11,6 +11,10 @@ This file is the runbook from here to "Launch" button.
 - [ ] Replace `480` in `steam/steam_appid.txt` with the real App ID
       (480 is Valve's public Spacewar test app — achievements/cloud calls
       no-op against it but the shell boots fine).
+      Packaged builds copy `steam_appid.txt` next to the .exe (electron-builder
+      `extraFiles`) so local/dev builds can talk to Steam without a launch
+      through the client. Builds uploaded through Steam don't need the file —
+      the client supplies the App ID itself.
 
 ## 2. Desktop builds
 ```
@@ -25,7 +29,7 @@ Upload with SteamPipe (steamcmd + app_build script) or the Steamworks
 web uploader for small depots.
 
 ## 3. Achievements (dashboard setup)
-Create these 13 achievements in Steamworks > Stats & Achievements, using the
+Create these 16 achievements in Steamworks > Stats & Achievements, using the
 **API Name** column (the shell calls `achievement.activate(ID.toUpperCase())`):
 
 | API Name    | In-game name        | Trigger                                |
@@ -43,6 +47,9 @@ Create these 13 achievements in Steamworks > Stats & Achievements, using the
 | AUDITOR     | Passed the Audit    | Defeat THE INSPECTOR                   |
 | OVERGROWN   | Overgrown           | Win a MOW+ run                         |
 | ONESTAR     | One-Star Review     | Defeat KAREN in under 90 seconds       |
+| GLASS       | Made of Porcelain   | Win GLASS LAWN (1 HP, no excuses)      |
+| SOLO        | This Is My Spatula  | Win ONE WEAPON WONDER                  |
+| RUSH        | Gnome Sayin'        | Win GNOME RUSH (6:00, gnomes only)     |
 
 Already-earned achievements re-fire on next unlock attempt only; for parity
 on first Steam boot, consider a one-time sync loop over `SAVE.ach` (left out

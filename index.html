@@ -36,8 +36,13 @@
   canvas#ov{display:block;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;pointer-events:none;z-index:5;}
   #crt{position:fixed;inset:0;pointer-events:none;z-index:8;opacity:.45;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,.09) 0 1px,transparent 1px 3px);}
-  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    background:rgba(5,9,5,.82);backdrop-filter:blur(4px);z-index:20;text-align:center;}
+  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    background:rgba(5,9,5,.82);backdrop-filter:blur(4px);z-index:20;text-align:center;
+    overflow-y:auto;overflow-x:hidden;padding:14px 0;}
+  /* auto margins center content when it fits and degrade to a top-aligned scroll when it doesn't
+     (justify-content:center would clip the top edge of overflowing screens with no way to scroll up) */
+  .screen>:first-child{margin-top:auto;}
+  .screen>:last-child{margin-bottom:auto;}
   .hide{display:none !important;}
   h1.logo{font-family:Impact,"Arial Black",sans-serif;font-size:min(11vw,92px);line-height:.92;margin:0;
     color:var(--lime);letter-spacing:2px;transform:rotate(-3deg);
@@ -203,7 +208,7 @@
   /* ---- small screens (portrait phones) AND short screens (landscape phones) ----
      Kept LAST so these always override the base rules above. */
   @media (max-width:640px),(max-height:520px){
-    .screen{justify-content:flex-start;padding:22px 0 30px;}
+    .screen{padding:14px 0 26px;}
     h2.bigword{font-size:32px;}
     .cards{flex-direction:column;gap:10px;}
     .upcard{width:min(92vw,370px);display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;}
@@ -229,6 +234,10 @@
     .setrow input[type=range]{width:130px;}
     #trophyRows,#almRows{max-height:52vh;}
     body.touch #rotateHint{display:block;}
+  }
+  @media (max-height:520px){ /* short-landscape: the logo can't eat half the viewport */
+    h1.logo{font-size:min(7vw,46px);}
+    .tag{font-size:14px;margin:8px 0 2px;}
   }
   @media (orientation:landscape){#rotateHint{display:none !important;}}
 </style>
@@ -277,7 +286,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.3 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.4 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -427,10 +436,14 @@ const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0,start:0},ac
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 const NATIVE=window.native||null; // Electron/Steam bridge (preload.js); null on the web
 let SAVE=JSON.parse(JSON.stringify(SAVE_DEF));
+let loadedSave=false; // true once ANY source parses — gates the first-boot heuristics below
+function parseSave(raw){try{const s=JSON.parse(raw);return s&&typeof s==='object'?s:null;}catch(e){return null;}}
 try{
-  const raw=(NATIVE&&NATIVE.loadSave())||localStorage.getItem('thwackalypse');
-  const s=JSON.parse(raw);
-  if(s){SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
+  // a torn save.json must not shadow the intact localStorage mirror: parse each source independently
+  let s=null;
+  if(NATIVE)try{s=parseSave(NATIVE.loadSave());}catch(e){}
+  if(!s)try{s=parseSave(localStorage.getItem('thwackalypse'));}catch(e){}
+  if(s){loadedSave=true;SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
     mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,seen:{...(s.seen||{})},
     chalBest:{...(s.chalBest||{})},
     streak:s.streak||{date:'',n:0},
@@ -464,6 +477,7 @@ const ZH={
   '💾 Save data':'💾 存档','🪟 Display':'🪟 显示','⌨ Up / Down':'⌨ 上 / 下','⌨ Left / Right':'⌨ 左 / 右',
   '💨 Dash key':'💨 冲刺键','🌐 Language':'🌐 语言','ON':'开','OFF':'关',
   'CRUSTY':'粗糙','CLASSIC':'经典','SHARP':'锐利','WINDOWED':'窗口','FULLSCREEN':'全屏',
+  'PRESS…':'请按键…','SPACE':'空格',
   'IMPORT SAVE':'导入存档','Paste your THWACK64 save code below.':'在下方粘贴你的 THWACK64 存档码。',
   'INVALID CODE':'无效代码','That save code didn\'t parse. The lawn rejects it. 🩴':'存档码无法解析。草坪拒绝了它。🩴',
   'COPIED!':'已复制！','FAILED':'失败','✅ COPIED!':'✅ 已复制！','❌ COPY FAILED':'❌ 复制失败','❌ NO CLIPBOARD':'❌ 无剪贴板',
@@ -480,7 +494,7 @@ const ZH={
   '🔥 MOW+ — DEFEND THE LAWN!':'🔥 修剪+ ——保卫草坪！','ENDLESS MODE':'无尽模式',
   'how long can the lawn last?':'草坪还能撑多久？',
   'SECOND WIND!':'回光返照！','the lawn isn\'t done with you':'草坪和你还没完',
-  'EVICTED!':'被驱逐了！','the lawn breathes easier':'草坪松了一口气',
+  ' EVICTED!':'被驱逐了！','the lawn breathes easier':'草坪松了一口气',
   'your':'你的','has ascended':'已飞升',
   'elite spotted — she drops a chest':'精英出现——她会掉落宝箱',
   '📋 PATRICIA HAS FILED A COMPLAINT':'📋 帕特丽夏提交了投诉',
@@ -512,8 +526,9 @@ const ZH={
   'Standard rules off. Trophies and bragging rights on.':'常规规则关闭。奖杯与吹牛资格开启。',
 };
 const T=s=>LANG==='zh'?(ZH[s]??s):s;
-/* accessibility: first boot on a reduced-motion system starts calm */
-if(!localStorage.getItem('thwackalypse')&&typeof matchMedia==='function'
+/* accessibility: first boot on a reduced-motion system starts calm
+   (keyed on whether a save loaded from ANY store — a cloud-synced file save counts) */
+if(!loadedSave&&typeof matchMedia==='function'
   &&matchMedia('(prefers-reduced-motion: reduce)').matches){
   SAVE.settings.shake=0;SAVE.settings.crt=0;
 }
@@ -629,18 +644,24 @@ const AU={
 const keys={};
 let kbCapture=null; // settings rebind: next keypress fills this slot
 addEventListener('keydown',e=>{
+  if(e.target&&(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'))return; // the import box owns its keys
   AU.init();if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();
   const k=e.key.toLowerCase();
-  if(kbCapture){
+  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
+  if(e.repeat)return; // OS key-repeat must not re-fire pause/mute/card-confirm
+  if(kbCapture&&G.state==='settings'){
     e.preventDefault();
     if(k!=='escape')SAVE.settings.keys[kbCapture]=k;
     kbCapture=null;persist();refreshKb();
     return;
   }
   keys[k]=true;
-  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   if(k==='m')toggleMute();
   if((k==='p'||k==='escape')&&(G.state==='play'||G.state==='pause'))togglePause();
+  if(k==='escape'){ // menu screens back out (scroll-trapped layouts always have an exit)
+    const esc={settings:'bBack3',shop:'bBack2',select:'bBack1',trophies:'bBack4',almanac:'bBack5',challenges:'bBack6'};
+    if(esc[G.state]){$(esc[G.state]).click();return;}
+  }
   if(G.state==='levelup'){ // keyboard card nav
     if(k==='arrowleft'||k==='a')gpFocusSet(GP.focus-1);
     if(k==='arrowright'||k==='d')gpFocusSet(GP.focus+1);
@@ -740,7 +761,9 @@ if(matchMedia&&matchMedia('(pointer:coarse)').matches)document.body.classList.ad
 function touchCopy(){ // menus speak thumb, not keyboard
   if(!document.body.classList.contains('touch'))return;
   const c=document.getElementById('ctlLine');
-  if(c)c.innerHTML='👈 left thumb moves &nbsp;·&nbsp; 👉 right thumb looks &nbsp;·&nbsp; 💨 dash button &nbsp;·&nbsp; ⏸ pause &nbsp;·&nbsp; weapons fire themselves';
+  if(c)c.innerHTML=LANG==='zh'
+    ?'👈 左手拇指移动 &nbsp;·&nbsp; 👉 右手拇指视角 &nbsp;·&nbsp; 💨 冲刺键 &nbsp;·&nbsp; ⏸ 暂停 &nbsp;·&nbsp; 武器自动开火'
+    :'👈 left thumb moves &nbsp;·&nbsp; 👉 right thumb looks &nbsp;·&nbsp; 💨 dash button &nbsp;·&nbsp; ⏸ pause &nbsp;·&nbsp; weapons fire themselves';
 }
 touchCopy();
 addEventListener('touchstart',touchCopy,{once:true,passive:true});
@@ -891,7 +914,7 @@ const CHALLENGES=[
   {id:'solo',icon:'☝️',name:'ONE WEAPON WONDER',
    desc:'No new weapons — your starter and passives only. Mastery or death.'},
   {id:'rush',icon:'⏱️',name:'GNOME RUSH',
-   desc:'Six minutes. Only gnomes. A very impatient KAREN. Score = thwacks.'},
+   desc:'Six minutes. Gnomes only — plus PATRICIA on patrol. A very impatient KAREN. Score = thwacks.'},
 ];
 const INSPECTOR={id:'inspector',name:'THE INSPECTOR',hp:42000,spd:86,dmg:55,r:50,
   sub:'your lawn\'s final audit. he has questions.'};
@@ -1082,19 +1105,20 @@ function applyZhData(){
   KAREN_LINES.push('我要报警了','你有许可证吗？','我认识市长','这事我要发到业主群','报上你的名字','难以置信。','我老公是律师');
   EVENTS[0].b='鸽群降临';EVENTS[0].s='鸽子。为什么偏偏是鸽子。';
   EVENTS[1].b='火烈鸟大迁徙';EVENTS[1].s='它们记得你对塑料表亲做过什么';
-  EVENTS[2].b='扫地机器人召回';EVENTS[2].s='固件更新：暴力';
-  EVENTS[3].b='鸽群：第二轮';EVENTS[3].s='咕。';
-  EVENTS[4].b='鼹鼠起义';EVENTS[4].s='大地本身在反抗';
+  EVENTS[2].b='乌鸦"谋杀团"';EVENTS[2].s='这个量词在法律上完全站得住脚';
+  EVENTS[3].b='扫地机器人召回';EVENTS[3].s='固件更新：暴力';
+  EVENTS[4].b='鸽群：第二轮';EVENTS[4].s='咕。';
+  EVENTS[5].b='鼹鼠起义';EVENTS[5].s='大地本身在反抗';
   const CH={glass:['玻璃草坪','最大生命变为 1。碰到就死。金币与经验翻倍。祝你好运。'],
     solo:['一招鲜','不再提供新武器——只有初始武器和被动。要么精通，要么死亡。'],
-    rush:['地精冲刺','六分钟。只有地精。还有一位非常不耐烦的卡伦。分数 = 拍飞数。']};
+    rush:['地精冲刺','六分钟。只有地精——外加巡逻的帕特丽夏。还有一位非常不耐烦的卡伦。分数 = 拍飞数。']};
   for(const c of CHALLENGES){c.name=CH[c.id][0];c.desc=CH[c.id][1];}
 }
 if(LANG==='zh')applyZhData();
 
 /* ============================== GAME STATE ============================== */
 const G={state:'menu',t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
-  kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,dying:false};
+  kills:0,gold:0,dmgDealt:0,bankedGold:0,bankedKills:0,won:false,endlessBossT:0,dying:false};
 let P=null;
 let enemies=[],bullets=[],ebullets=[],gems=[],coins=[],pickups=[],parts=[],texts=[],rings=[],bees=[],pets=[],zones=[];
 let grid=new Map();
@@ -1122,7 +1146,7 @@ function newRun(charId){
   P.pend+=SAVE.upg.start||0; // Head Start: free picks before the first gnome arrives
   enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];zones=[];
   Object.assign(G,{t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
-    kills:0,gold:0,dmgDealt:0,banked:false,won:false,endlessBossT:0,boss:null,dying:false,
+    kills:0,gold:0,dmgDealt:0,bankedGold:0,bankedKills:0,won:false,endlessBossT:0,boss:null,dying:false,
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
     karenSpawned:false,karenT:0,karenDeadT:0,rerolls:2,
@@ -1195,10 +1219,11 @@ function killEnemy(e){
   spray(e.x,e.y,e.boss?40:e.elite?20:8,e.col,e.boss?340:200);
   spray(e.x,e.y,e.boss?20:4,'#fff',160);
   if(e.boss){
-    G.shake=18;G.ts=.25;AU.boom();AU.chest();G.boss=null;
+    G.shake=18;G.ts=.25;AU.boom();AU.chest();
+    G.boss=enemies.find(x=>x.boss&&!x.dead)||null; // hand the HP bar to a surviving boss (endless overlaps)
     if(e.type==='hoa')ach('boss1');
-    if(e.type==='inspector'){ach('auditor');G.gold+=500;
-      popText(e.x,e.y,T('AUDIT PASSED. +500g'),'#ffd23e',22,90);}
+    if(e.type==='inspector'){ach('auditor');const ig=goldBonus(500);G.gold+=ig;
+      popText(e.x,e.y,T('AUDIT PASSED. +500g').replace('500',ig),'#ffd23e',22,90);}
     if(e.type==='karen'){
       G.karenDeadT=G.t;
       if(G.t-G.karenT<90)ach('onestar');
@@ -1206,23 +1231,28 @@ function killEnemy(e){
     }
     if(['hoa','landlord','gentri'].includes(e.type))G.bossesRun.push(e.type);
     if(new Set(G.bossesRun).size>=3)ach('sweep');
-    for(let i=0;i<10;i++)gems.push(gem(e.x+rand(-50,50),e.y+rand(-50,50),10));
-    for(let i=0;i<12;i++)coins.push({x:e.x+rand(-70,70),y:e.y+rand(-70,70),v:5});
+    for(let i=0;i<10;i++)dropGem(e.x+rand(-50,50),e.y+rand(-50,50),10);
+    for(let i=0;i<12;i++)dropCoin(e.x+rand(-70,70),e.y+rand(-70,70),5);
     pickups.push({x:e.x,y:e.y,kind:'chest',big:true});
     pickups.push({x:e.x+50,y:e.y+20,kind:'burger'});
     banner(e.name+T(' EVICTED!'),T('the lawn breathes easier'));
   }else{
     G.shake=Math.min(G.shake+(e.elite?6:1.2),10);
-    gems.push(gem(e.x,e.y,e.xp));
-    if(e.elite){pickups.push({x:e.x,y:e.y,kind:'chest'});for(let i=0;i<6;i++)coins.push({x:e.x+rand(-40,40),y:e.y+rand(-40,40),v:2});}
+    dropGem(e.x,e.y,e.xp);
+    if(e.elite){pickups.push({x:e.x,y:e.y,kind:'chest'});for(let i=0;i<6;i++)dropCoin(e.x+rand(-40,40),e.y+rand(-40,40),2);}
     else{
-      if(RNG()<e.gold)coins.push({x:e.x,y:e.y,v:1});
+      if(RNG()<e.gold)dropCoin(e.x,e.y,1);
       if(RNG()<.013)pickups.push({x:e.x,y:e.y,kind:'burger'});
       if(RNG()<.004)pickups.push({x:e.x,y:e.y,kind:'magnet'});
     }
   }
 }
 function gem(x,y,v){return {x,y,v,pull:false,t:rand(TAU)};}
+/* drop helpers: cap the arrays at their render-pool sizes by folding the oldest
+   drop's value into the new one — no unbounded growth, no invisible fresh loot */
+function dropGem(x,y,v){if(gems.length>=600)v+=gems.shift().v;gems.push(gem(x,y,v));}
+function dropCoin(x,y,v){if(coins.length>=240)v+=coins.shift().v;coins.push({x,y,v});}
+const goldBonus=n=>Math.round(n*(G.challenge==='glass'?2:1)); // GLASS LAWN doubles flat awards too
 function hurtPlayer(d){
   if(P.iT>0||P.dashT>0||G.dying)return;
   d=Math.max(1,d-P.stats.armor);
@@ -1233,6 +1263,7 @@ function hurtPlayer(d){
 }
 function die(){
   if(G.dying)return;
+  if(G.karenDeadT&&!G.won){winScreen();return;} // KAREN is already beaten — her lingering bullets can't steal the win
   if(SAVE.upg.revive>0&&!G.revived){ // SECOND WIND
     G.revived=true;
     P.hp=Math.round(P.stats.maxHp*.5);P.iT=2;
@@ -1246,8 +1277,9 @@ function die(){
   G.ts=.18;G.shake=16;AU.boom();AU.lose();
   spray(P.x,P.y,36,'#fc6',330);spray(P.x,P.y,20,'#fff',260);
   bankGold();
-  if(G.t>SAVE.best){SAVE.best=G.t;persist();}
   setTimeout(()=>{
+    if(!G.dying)return; // run was torn down while we slow-mo'd
+    hideAll(['scrPause','scrChest','scrLevel']); // anything that snuck open during the death window
     $('deadStats').innerHTML=
       `${T('Survived')} <b>${fmtT(G.t)}</b> · ${T('Level')} <b>${P.lvl}</b><br>`+
       `💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')}<br>`+
@@ -1255,14 +1287,19 @@ function die(){
     show('scrDead');G.state='dead';
   },900);
 }
-function bankGold(){if(!G.banked){SAVE.gold+=G.gold;G.banked=true;
-  SAVE.stats.totalGold+=G.gold;SAVE.stats.totalKills+=G.kills;
+function bankGold(){ // banks the delta since the last call, so post-win endless earnings count too
+  const dg=Math.max(0,G.gold-(G.bankedGold||0)),dk=Math.max(0,G.kills-(G.bankedKills||0));
+  G.bankedGold=G.gold;G.bankedKills=G.kills;
+  SAVE.gold+=dg;
+  SAVE.stats.totalGold+=dg;SAVE.stats.totalKills+=dk;
   if(P)SAVE.bests[P.char.id]=Math.max(SAVE.bests[P.char.id]||0,Math.floor(G.t));
+  if(G.t>SAVE.best)SAVE.best=G.t;
   if(G.daily){const t=todayStr();
     if(!SAVE.daily||SAVE.daily.date!==t||G.kills>SAVE.daily.score)
       SAVE.daily={date:t,score:G.kills};}
+  if(G.challenge)SAVE.chalBest[G.challenge]=Math.max(SAVE.chalBest[G.challenge]||0,G.kills);
   if(SAVE.stats.totalGold>=1000)ach('rich');
-  persist();}}
+  persist();}
 function dailyLineHtml(){
   if(!G.daily)return '';
   const best=(SAVE.daily&&SAVE.daily.date===todayStr())?SAVE.daily.score:0;
@@ -1318,7 +1355,7 @@ function buildPool(){
 function openLevelUp(){
   G.state='levelup';AU.level();
   const pool=buildPool();const picks=[];
-  while(picks.length<3&&pool.length){const i=Math.floor(Math.random()*pool.length);picks.push(pool.splice(i,1)[0]);}
+  while(picks.length<3&&pool.length){const i=Math.floor(RNG()*pool.length);picks.push(pool.splice(i,1)[0]);} // seeded: daily-run offers must be reproducible
   if(!picks.length)picks.push({kind:'heal'});
   const cd=$('cards');cd.innerHTML='';
   for(const p of picks)cd.appendChild(makeCard(p,()=>{applyChoice(p);closeLevelUp();}));
@@ -1343,7 +1380,7 @@ function makeCard(p,onClick){
     const def=p.kind==='w'?WEAPONS[p.id]:PASSIVES[p.id];
     const tag=p.kind==='w'?`<div class="tagW">${T('WEAPON')}</div>`:`<div class="tagP">${T('PASSIVE')}</div>`;
     const isNew=p.lvl===1;
-    const hint=p.kind==='w'?`<div class="evhint">${T('🧬 evolves with')} ${PASSIVES[EVO[p.id].passive].name} Lv2+</div>`:'';
+    const hint=p.kind==='w'?`<div class="evhint">${T('🧬 evolves with')} ${PASSIVES[EVO[p.id].passive].name} ${T('LV ')}2+</div>`:'';
     div.innerHTML=`${tag}${isNew?`<div class="new">${T('NEW!')}</div>`:''}<div class="ic">${def.icon}</div>
       <div class="nm">${def.name}</div>
       <div class="lv">${isNew?T('Level 1'):T('Level')+' '+(p.lvl-1)+' → <b>'+p.lvl+'</b>'} ${'●'.repeat(p.lvl)}${'○'.repeat(5-p.lvl)}</div>
@@ -1352,7 +1389,7 @@ function makeCard(p,onClick){
   div.onclick=onClick;return div;
 }
 function applyChoice(p){
-  if(p.kind==='heal'){P.hp=Math.min(P.stats.maxHp,P.hp+50);G.gold+=50;AU.heal();return;}
+  if(p.kind==='heal'){P.hp=Math.min(P.stats.maxHp,P.hp+50);G.gold+=goldBonus(50);AU.heal();return;}
   if(p.kind==='w'){
     const w=P.weapons.find(x=>x.id===p.id);
     if(w)w.lvl=p.lvl;else addWeapon(p.id);
@@ -1391,7 +1428,9 @@ function openChest(big){
   spray(P.x,P.y,30,'#ffd23e',260);
   show('scrChest');
 }
-$('bChestOk').onclick=()=>{hideAll(['scrChest']);G.state='play';
+$('bChestOk').onclick=()=>{hideAll(['scrChest']);
+  if(!P)return; // chest screen orphaned by a menu exit — don't resurrect 'play' on an empty lawn
+  G.state='play';
   if(P.pend>0)openLevelUp();else relock();};
 
 /* ============================== WEAPON TICKS ============================== */
@@ -1531,7 +1570,7 @@ function dashSignature(dt){
       else if(k==='mow'){hitEnemy(e,45,{fx:P.x,fy:P.y,kb:260,src:'dash'});
         spray(e.x,e.y,4,'#71f24c',160);}
       else{hitEnemy(e,15,{fx:P.x,fy:P.y,kb:200,src:'dash'});
-        if(P.stealN<5){P.stealN++;coins.push({x:e.x,y:e.y,v:1});}}
+        if(P.stealN<5){P.stealN++;dropCoin(e.x,e.y,1);}}
     });
   }
 }
@@ -1622,10 +1661,10 @@ function director(dt){
     spawnEnemy('patricia');banner(T('📋 PATRICIA HAS FILED A COMPLAINT'),T('elite spotted — she drops a chest'));}
   if(!rush&&G.bossIdx<BOSSES.length&&G.t>=BOSSES[G.bossIdx].at)spawnBoss(BOSSES[G.bossIdx++]);
   if(!G.karenSpawned&&G.t>=(rush?360:720))spawnKaren(); // the final complaint (rush: she's impatient)
-  if(G.karenDeadT&&!G.won&&G.t-G.karenDeadT>1.3)winScreen();
-  if(G.won&&G.t>720&&!G.boss){G.endlessBossT-=dt;
+  if(G.karenDeadT&&!G.won&&!G.dying&&G.t-G.karenDeadT>1.3)winScreen();
+  if(!rush&&G.won&&G.t>720&&!G.boss){G.endlessBossT-=dt;
     if(G.endlessBossT<=0){G.endlessBossT=150;spawnBoss(choice(BOSSES));}}
-  if(G.won&&G.t>=G.inspectorT){ // the audit cannot be rescheduled
+  if(!rush&&G.won&&G.t>=G.inspectorT){ // the audit cannot be rescheduled (rush endless stays gnomes-only)
     G.inspectorT+=300;
     const b=spawnBoss({...INSPECTOR,hp:INSPECTOR.hp*G.inspectorMult});
     G.inspectorMult*=3;b.aiT=4;}
@@ -1633,11 +1672,10 @@ function director(dt){
 function winScreen(){
   G.won=true;
   ach('survivor');SAVE.stats.wins++;
-  SAVE.mowWins[MAP.id]=true;
+  if(!G.challenge)SAVE.mowWins[MAP.id]=true; // MOW+ unlocks are earned under standard rules only
   if(G.mowplus)ach('overgrown');
-  if(G.challenge){ach(G.challenge);
-    SAVE.chalBest[G.challenge]=Math.max(SAVE.chalBest[G.challenge]||0,G.kills);}
-  bankGold();if(G.t>SAVE.best){SAVE.best=G.t;persist();}
+  if(G.challenge)ach(G.challenge);
+  bankGold();
   AU.win();
   $('winStats').innerHTML=`${T('You defeated')} <b>${KAREN.name}</b>${G.mowplus?' <b style="color:#ff7a3c">MOW+</b>':''}. ${T('The lawn is finally quiet.')}<br>
     💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')} · ${T('Level')} <b>${P.lvl}</b>`+dailyLineHtml()+weaponStatsHtml();
@@ -1873,14 +1911,15 @@ function update(dt){
       pk.x+=dx/L*380*dt;pk.y+=dy/L*380*dt;
     }
     if(d2(pk.x,pk.y,P.x,P.y)<rr*rr){
+      if(pk.kind==='chest'&&G.dying)continue; // no prize screens during the death window
       pickups.splice(i,1);
       if(pk.kind==='chest')openChest(pk.big);
       else if(pk.kind==='burger'){P.hp=Math.min(P.stats.maxHp,P.hp+40);AU.heal();
         popText(P.x,P.y,'+40','#7f7',18,50);}
       else if(pk.kind==='magnet'){for(const g of gems)g.pull=true;AU.heal();
         popText(P.x,P.y,T('FRIDGE MAGNET!'),'#6fd3ff',16,50);}
-      else if(pk.kind==='phone'){P.hp=P.stats.maxHp;G.gold+=250;AU.chest();
-        popText(P.x,P.y,T('EVIDENCE DELETED. +250g'),'#6fd3ff',19,56);}
+      else if(pk.kind==='phone'){P.hp=P.stats.maxHp;const pg=goldBonus(250);G.gold+=pg;AU.chest();
+        popText(P.x,P.y,T('EVIDENCE DELETED. +250g').replace('250',pg),'#6fd3ff',19,56);}
     }
   }
 
@@ -2088,7 +2127,8 @@ const DECO_S=3200;
 function wrapC(v){return ((v%DECO_S)+DECO_S*1.5)%DECO_S-DECO_S/2;}
 let decoPools=[];
 function buildDecos(map){
-  for(const dp of decoPools){scene.remove(dp.pool);dp.pool.geometry.dispose();}
+  for(const dp of decoPools){scene.remove(dp.pool);dp.pool.geometry.dispose();dp.pool.dispose();
+    if(dp.pool.material!==MAT)dp.pool.material.dispose();} // firefly maps allocate a per-map material
   decoPools=[];
   const defs=[];
   const tuft=[];P_(tuft,C(5,14,5),map.tuft,0,7,0);P_(tuft,C(4,11,5),map.leaf2,6,5,3);P_(tuft,C(4,11,5),map.leaf1,-5,5,-3);
@@ -2366,8 +2406,14 @@ function buildChar(id){
   return g;
 }
 let playerNode=null;
+function disposeNode(n){ // free geometry + bespoke materials/textures; the shared MAT must survive
+  n.traverse(o=>{
+    if(o.geometry)o.geometry.dispose();
+    if(o.material&&o.material!==MAT){if(o.material.map)o.material.map.dispose();o.material.dispose();}
+  });
+}
 function setPlayerModel(id){
-  if(playerNode)scene.remove(playerNode);
+  if(playerNode){scene.remove(playerNode);disposeNode(playerNode);}
   playerNode=buildChar(id);scene.add(playerNode);
 }
 
@@ -2539,7 +2585,7 @@ for(let i=0;i<12;i++)menuActors.push({x:rand(-520,520),y:rand(-520,520),
   tx:rand(-520,520),ty:rand(-520,520),ph:rand(TAU)});
 function clearWorld(){
   enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];zones=[];
-  for(const id in bossNodes){scene.remove(bossNodes[id]);delete bossNodes[id];}
+  for(const id in bossNodes){scene.remove(bossNodes[id]);disposeNode(bossNodes[id]);delete bossNodes[id];}
 }
 /* ---------- main 3D render ---------- */
 function enemyAnim(e,t){
@@ -2661,10 +2707,10 @@ function render3d(){
   for(const k in E_POOLS)flush(E_POOLS[k],counts[k]);
   // cleanup dead boss nodes
   for(const id in bossNodes){
-    if(!enemies.some(e=>e.boss&&e.id==id)){scene.remove(bossNodes[id]);delete bossNodes[id];}
+    if(!enemies.some(e=>e.boss&&e.id==id)){scene.remove(bossNodes[id]);disposeNode(bossNodes[id]);delete bossNodes[id];}
   }
   // bullets
-  const bCounts={chancla:0,toast:0,drop:0,dart:0,sand:0};
+  const bCounts={chancla:0,toast:0,drop:0,dart:0,sand:0,air:0};
   for(const b of bullets){
     const pool=B_POOLS[b.kind];if(!pool)continue;
     let n=bCounts[b.kind];if(n>=pool.instanceMatrix.count)continue;
@@ -2819,23 +2865,27 @@ function drawTexts(){
 /* ============================== UI / FLOW ============================== */
 function show(id){$(id).classList.remove('hide');}
 function hideAll(ids){for(const i of ids)$(i).classList.add('hide');}
-function toggleMute(){AU.muted=!AU.muted;$('bMute').textContent='MUTE: '+(AU.muted?'ON':'OFF');}
+function toggleMute(){AU.muted=!AU.muted;$('bMute').textContent=T(AU.muted?'MUTE: ON':'MUTE: OFF');}
 function togglePause(){
+  if(G.dying)return; // no pausing the death cam — it strands PAUSED over the end screens
   if(G.state==='play'){G.state='pause';
     let s='';
-    for(const w of P.weapons)s+=`${wIcon(w)} ${wName(w)} ${w.evo?'★':'Lv'+w.lvl} &nbsp; `;
+    for(const w of P.weapons)s+=`${wIcon(w)} ${wName(w)} ${w.evo?'★':T('LV ')+w.lvl} &nbsp; `;
     s+='<br>';
-    for(const id in P.passives)s+=`${PASSIVES[id].icon} ${PASSIVES[id].name} Lv${P.passives[id]} &nbsp; `;
+    for(const id in P.passives)s+=`${PASSIVES[id].icon} ${PASSIVES[id].name} ${T('LV ')+P.passives[id]} &nbsp; `;
     $('pauseBuild').innerHTML=s||T('no build yet');
     show('scrPause');}
   else if(G.state==='pause'){G.state='play';hideAll(['scrPause']);}
 }
 function refreshMenu(){
   const allAch=Object.keys(ACHS).every(id=>SAVE.ach[id]);
+  const td=todayStr(),yd=new Date();yd.setDate(yd.getDate()-1);
+  const ystr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  const streak=(SAVE.streak.date===td||SAVE.streak.date===ystr)?(SAVE.streak.n||0):0; // lapsed streaks don't brag
   $('menuStats').innerHTML=`🪙 <b style="color:var(--gold)">${SAVE.gold}</b> ${T('banked2')==='banked2'?T('banked'):T('banked2')}`+
     (SAVE.best?` &nbsp;·&nbsp; ${T('⏱ best:')} <b>${fmtT(SAVE.best)}</b>`:'')+
     ((SAVE.daily&&SAVE.daily.date===todayStr())?` &nbsp;·&nbsp; ${T('📅 today:')} <b>${SAVE.daily.score}</b> 💀`:'')+
-    ((SAVE.streak.n||0)>=2?` &nbsp;·&nbsp; 🔥 <b>${SAVE.streak.n}</b>${T('-day streak')}`:'')+
+    (streak>=2?` &nbsp;·&nbsp; 🔥 <b>${streak}</b>${T('-day streak')}`:'')+
     (allAch?` &nbsp;·&nbsp; <b style="color:var(--gold)">${T('👑 LAWN LEGEND')}</b>`:'');
 }
 function charLocked(c){
@@ -2903,7 +2953,7 @@ function buildShop(){
       <div class="nm">${it.name} <span class="pips">${'●'.repeat(tier)}${'○'.repeat(maxT-tier)}</span></div>
       <div class="ds">${it.desc}</div></div>`;
     const b=document.createElement('button');b.className='buy';
-    b.textContent=max?'MAX':'🪙 '+cost;
+    b.textContent=max?T('MAX'):'🪙 '+cost;
     b.disabled=max||SAVE.gold<cost;
     b.onclick=()=>{if(SAVE.gold>=cost&&!max){SAVE.gold-=cost;SAVE.upg[it.id]++;persist();AU.coin();buildShop();}};
     d.appendChild(b);rows.appendChild(d);
@@ -3008,17 +3058,18 @@ $('bBack5').onclick=()=>{hideAll(['scrAlmanac']);refreshMenu();show('scrMenu');G
 /* settings */
 let settingsFrom='menu';
 function setBtnTxt(){
-  $('sShake').textContent=SAVE.settings.shake?'ON':'OFF';
-  $('sCrt').textContent=SAVE.settings.crt?'ON':'OFF';
-  $('sDmg').textContent=SAVE.settings.dmgnum?'ON':'OFF';
+  $('sShake').textContent=T(SAVE.settings.shake?'ON':'OFF');
+  $('sCrt').textContent=T(SAVE.settings.crt?'ON':'OFF');
+  $('sDmg').textContent=T(SAVE.settings.dmgnum?'ON':'OFF');
   $('sMusicV').textContent=Math.round(SAVE.settings.music*100)+'%';
   $('sSfxV').textContent=Math.round(SAVE.settings.sfx*100)+'%';
   $('sSensV').textContent=Math.round((SAVE.settings.sens||1)*100)+'%';
-  $('sRes').textContent={220:'CRUSTY',270:'CLASSIC',360:'SHARP'}[SAVE.settings.res||270]||'CLASSIC';
+  $('sRes').textContent=T({220:'CRUSTY',270:'CLASSIC',360:'SHARP'}[SAVE.settings.res||270]||'CLASSIC');
+  if(NATIVE)try{$('sWin').textContent=T(NATIVE.getFullscreen()?'FULLSCREEN':'WINDOWED');}catch(e){} // refreshed on every settings open, so F11 can't desync it
   $('crt').style.display=SAVE.settings.crt?'block':'none';
 }
 function openSettings(from){
-  settingsFrom=from;
+  settingsFrom=from;kbCapture=null; // a stale rebind capture must not eat the next keypress
   hideAll(['scrMenu','scrPause']);
   $('sMusic').value=SAVE.settings.music*100;$('sSfx').value=SAVE.settings.sfx*100;
   $('sSens').value=(SAVE.settings.sens||1)*100;
@@ -3027,7 +3078,7 @@ function openSettings(from){
 $('bSettings').onclick=()=>openSettings('menu');
 $('bSettings2').onclick=()=>openSettings('pause');
 $('sSens').oninput=e=>{SAVE.settings.sens=e.target.value/100;persist();setBtnTxt();};
-$('bBack3').onclick=()=>{hideAll(['scrSettings']);
+$('bBack3').onclick=()=>{kbCapture=null;hideAll(['scrSettings']);
   if(settingsFrom==='pause'){show('scrPause');G.state='pause';}
   else{refreshMenu();show('scrMenu');G.state='menu';}};
 $('sMusic').oninput=e=>{SAVE.settings.music=e.target.value/100;persist();AU.applyVols();setBtnTxt();};
@@ -3038,32 +3089,32 @@ $('sDmg').onclick=()=>{SAVE.settings.dmgnum=SAVE.settings.dmgnum?0:1;persist();s
 $('sRes').onclick=()=>{const o=[220,270,360],i=o.indexOf(SAVE.settings.res||270);
   SAVE.settings.res=o[(i+1)%3];persist();setBtnTxt();resize();};
 $('sLang').textContent=LANG==='zh'?'中文':'ENGLISH';
-$('sLang').onclick=()=>{SAVE.settings.lang=LANG==='zh'?'en':'zh';persist();location.reload();};
+$('sLang').onclick=()=>{if(P)bankGold(); // the reload kills any live run — bank it first
+  SAVE.settings.lang=LANG==='zh'?'en':'zh';persist();location.reload();};
 /* key rebinding */
-function kbName(k){return k===' '?'SPACE':k.length===1?k.toUpperCase():k.toUpperCase().slice(0,8);}
+function kbName(k){return k===' '?T('SPACE'):k.length===1?k.toUpperCase():k.toUpperCase().slice(0,8);}
 function refreshKb(){
   document.querySelectorAll('.kb').forEach(b=>{
-    b.textContent=kbCapture===b.dataset.slot?'PRESS…':kbName(SAVE.settings.keys[b.dataset.slot]);
+    b.textContent=kbCapture===b.dataset.slot?T('PRESS…'):kbName(SAVE.settings.keys[b.dataset.slot]);
   });
 }
 document.querySelectorAll('.kb').forEach(b=>{
   b.onclick=()=>{kbCapture=b.dataset.slot;refreshKb();};
 });
 $('kbReset').onclick=()=>{SAVE.settings.keys={...KEYDEF};persist();refreshKb();};
-if(NATIVE){ // desktop build: window-mode toggle (F11 also works)
+if(NATIVE){ // desktop build: window-mode toggle (F11 also works; setBtnTxt owns the label)
   $('rowWin').classList.remove('hide');
-  const winTxt=()=>{$('sWin').textContent=NATIVE.getFullscreen()?'FULLSCREEN':'WINDOWED';};
-  winTxt();
-  $('sWin').onclick=()=>{NATIVE.setFullscreen(!NATIVE.getFullscreen());setTimeout(winTxt,120);};
+  setBtnTxt();
+  $('sWin').onclick=()=>{NATIVE.setFullscreen(!NATIVE.getFullscreen());setTimeout(setBtnTxt,120);};
 }
 $('sExport').onclick=()=>{
   const code='THWACK64:'+btoa(unescape(encodeURIComponent(JSON.stringify(SAVE))));
   const b=$('sExport');
   if(navigator.clipboard&&navigator.clipboard.writeText)
-    navigator.clipboard.writeText(code).then(()=>{b.textContent='COPIED!';},
-      ()=>{b.textContent='FAILED';});
-  else b.textContent='FAILED';
-  setTimeout(()=>b.textContent='EXPORT',1800);
+    navigator.clipboard.writeText(code).then(()=>{b.textContent=T('COPIED!');},
+      ()=>{b.textContent=T('FAILED');});
+  else b.textContent=T('FAILED');
+  setTimeout(()=>b.textContent=T('EXPORT'),1800);
 };
 /* in-game modal (no prompt/alert — those look broken in the desktop shell) */
 function gameModal(opts){ // {title,text,input:bool} -> Promise<string|null>
@@ -3081,7 +3132,7 @@ function gameModal(opts){ // {title,text,input:bool} -> Promise<string|null>
   });
 }
 $('sImport').onclick=async()=>{
-  const txt=await gameModal({title:'IMPORT SAVE',text:'Paste your THWACK64 save code below.',input:true});
+  const txt=await gameModal({title:T('IMPORT SAVE'),text:T('Paste your THWACK64 save code below.'),input:true});
   if(!txt)return;
   try{
     const obj=JSON.parse(decodeURIComponent(escape(atob(txt.trim().replace(/^THWACK64:/,'')))));
@@ -3090,7 +3141,7 @@ $('sImport').onclick=async()=>{
     if(NATIVE)NATIVE.saveSave(JSON.stringify(obj));
     location.reload();
   }catch(e){
-    gameModal({title:'INVALID CODE',text:'That save code didn\'t parse. The lawn rejects it. 🩴',cancel:false});
+    gameModal({title:T('INVALID CODE'),text:T('That save code didn\'t parse. The lawn rejects it. 🩴'),cancel:false});
   }
 };
 $('crt').style.display=SAVE.settings.crt?'block':'none';
@@ -3101,9 +3152,11 @@ $('bResume').onclick=togglePause;
 $('bMute').onclick=toggleMute;
 $('bQuit').onclick=()=>{bankGold();hideAll(['scrPause','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
 $('bRetry').onclick=()=>{hideAll(['scrDead']);newRun(P.char.id);};
-$('bMenu1').onclick=()=>{hideAll(['scrDead','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
-$('bGoOn').onclick=()=>{hideAll(['scrWin']);G.state='play';banner(T('ENDLESS MODE'),T('how long can the lawn last?'));};
-$('bMenu2').onclick=()=>{hideAll(['scrWin','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
+$('bMenu1').onclick=()=>{hideAll(['scrDead','scrWin','scrPause','scrChest','scrLevel','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
+$('bGoOn').onclick=()=>{hideAll(['scrWin','scrDead']);if(!P)return;
+  G.dying=false;P.hp=Math.max(P.hp,Math.round(P.stats.maxHp*.25)); // a near-death win still earns a breather
+  G.state='play';banner(T('ENDLESS MODE'),T('how long can the lawn last?'));};
+$('bMenu2').onclick=()=>{hideAll(['scrWin','scrDead','scrPause','scrChest','scrLevel','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
 
 /* ============================== GAMEPAD ============================== */
 const GP={x:0,y:0,dash:false,lastB:[],focus:0};
@@ -3173,7 +3226,7 @@ function applyLangHtml(){
   const set=(id,txt)=>{const el=$(id);if(el)el.textContent=txt;};
   ['bPlay','bDaily','bChal','bShop','bTrophies','bAlmanac','bSettings','bResume','bQuit','bRetry','bBack6',
    'bMenu1','bMenu2','bGoOn','bShare1','bShare2','bChestOk','bFull','modalOk','modalCancel',
-   'bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
+   'sExport','sImport','bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
     const el=$(id);if(el)el.textContent=T(el.textContent.trim());});
   document.querySelectorAll('.setrow .sl').forEach(el=>{el.textContent=T(el.textContent.trim());});
   document.querySelectorAll('.screen h2.bigword').forEach(el=>{el.textContent=T(el.textContent.trim());});
@@ -3182,6 +3235,9 @@ function applyLangHtml(){
   set('dashlab',T('DASH [SPACE]'));
   const tag=document.querySelector('#scrMenu .tag');
   if(tag)tag.textContent=T(tag.textContent.trim());
+  const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
+  if(smalls[0])smalls[0].textContent='与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
+  if(smalls[1])smalls[1].textContent='v2.4 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))

@@ -2,4 +2,5 @@
 node_modules/
 steam/node_modules/
 steam/dist/
+steam/app/
 steam/smoke.result

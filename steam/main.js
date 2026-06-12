@@ -2,7 +2,7 @@
    Loads the exact same index.html as the web build; the game detects the
    `native` bridge (preload.js) and switches saves/achievements over to it.
    Works with or without Steam running — everything degrades gracefully. */
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -30,7 +30,15 @@ ipcMain.on('save-read', (e) => {
   catch { e.returnValue = null; }
 });
 ipcMain.on('save-write', (_e, data) => {
-  try { fs.writeFileSync(SAVE_PATH(), String(data)); } catch (err) { console.error('[save]', err); }
+  // Atomic write: a crash mid-write must never truncate save.json. Write the
+  // full payload to a temp file, then rename over the target (rename on the
+  // same volume is atomic; Node uses MoveFileEx(REPLACE_EXISTING) on Windows).
+  try {
+    const target = SAVE_PATH();
+    const tmp = target + '.tmp';
+    fs.writeFileSync(tmp, String(data));
+    fs.renameSync(tmp, target);
+  } catch (err) { console.error('[save]', err); }
 });
 
 /* ---- IPC: achievements / stats ---- */
@@ -65,12 +73,14 @@ function createWindow() {
       backgroundThrottling: false
     }
   });
-  // packaged build copies web files into app/; dev runs from the repo root
-  const packed = path.join(__dirname, 'app', 'index.html');
-  win.loadFile(fs.existsSync(packed) ? packed : path.join(__dirname, '..', 'index.html'));
+  // Packaged build ships web files in app/ (staged by copy-app.js); dev always
+  // runs from the repo root so a stale steam/app/ copy can never shadow it.
+  win.loadFile(app.isPackaged
+    ? path.join(__dirname, 'app', 'index.html')
+    : path.join(__dirname, '..', 'index.html'));
 
   win.webContents.on('before-input-event', (e, input) => {
-    if (input.key === 'F11' && input.type === 'keyDown') {
+    if (input.key === 'F11' && input.type === 'keyDown' && !input.isAutoRepeat) {
       win.setFullScreen(!win.isFullScreen());
       e.preventDefault();
     }
@@ -93,5 +103,11 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => { initSteam(); createWindow(); });
+app.whenReady().then(() => {
+  // Kill the default menu: its accelerators are live in shipped games
+  // (Ctrl+R wipes the run, Ctrl+W instant-quits, Ctrl+Shift+I, Alt menu bar).
+  Menu.setApplicationMenu(null);
+  initSteam();
+  createWindow();
+});
 app.on('window-all-closed', () => app.quit());
