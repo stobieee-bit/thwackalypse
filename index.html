@@ -266,6 +266,7 @@
     <button class="btn gold" id="bDaily">📅 DAILY RUN</button>
   </div>
   <div>
+    <button class="btn alt sm" id="bChal">CHALLENGES</button>
     <button class="btn gold sm" id="bShop">LAWN SHOP</button>
     <button class="btn alt sm" id="bTrophies">TROPHIES</button>
     <button class="btn alt sm" id="bAlmanac">ALMANAC</button>
@@ -276,7 +277,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.2 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.3 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -317,6 +318,13 @@
     <button class="btn" id="modalOk">OK</button>
     <button class="btn alt" id="modalCancel">CANCEL</button>
   </div>
+</div>
+
+<div id="scrChal" class="screen hide">
+  <h2 class="bigword">CHALLENGES</h2>
+  <div id="chalNote" class="small" style="font-size:13px"></div>
+  <div id="chalRows" style="display:flex;flex-direction:column;gap:8px;margin:10px"></div>
+  <button class="btn alt" id="bBack6">BACK</button>
 </div>
 
 <div id="scrAlmanac" class="screen hide">
@@ -414,7 +422,7 @@ const $=id=>document.getElementById(id);
 const KEYDEF={up:'w',down:'s',left:'a',right:'d',dash:' '};
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0,start:0},ach:{},lastMap:'lawn',
   streak:{date:'',n:0},
-  mowplus:0,mowWins:{},bests:{},daily:null,seen:{},
+  mowplus:0,mowWins:{},bests:{},daily:null,seen:{},chalBest:{},
   settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270,lang:'en',keys:{...KEYDEF}},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 const NATIVE=window.native||null; // Electron/Steam bridge (preload.js); null on the web
@@ -424,6 +432,7 @@ try{
   const s=JSON.parse(raw);
   if(s){SAVE={...SAVE,...s,upg:{...SAVE_DEF.upg,...(s.upg||{})},ach:{...(s.ach||{})},
     mowWins:{...(s.mowWins||{})},bests:{...(s.bests||{})},daily:s.daily||null,seen:{...(s.seen||{})},
+    chalBest:{...(s.chalBest||{})},
     streak:s.streak||{date:'',n:0},
     settings:{...SAVE_DEF.settings,...(s.settings||{}),
       keys:{...KEYDEF,...((s.settings||{}).keys||{})}},
@@ -499,6 +508,8 @@ const ZH={
   // daily / share
   'DAILY':'每日','seeded — everyone fights the same waves · score = thwacks':'固定种子——所有人面对相同敌潮 · 分数 = 拍飞数',
   'Front Lawn':'前院草坪','survived':'存活','KAREN evicted':'卡伦已被驱逐',
+  'CHALLENGES':'挑战','🔒 Defeat KAREN once to open the challenges.':'🔒 先击败一次卡伦以开启挑战。',
+  'Standard rules off. Trophies and bragging rights on.':'常规规则关闭。奖杯与吹牛资格开启。',
 };
 const T=s=>LANG==='zh'?(ZH[s]??s):s;
 /* accessibility: first boot on a reduced-motion system starts calm */
@@ -568,7 +579,7 @@ const AU={
   sched(){
     if(!this.ctx)return;
     const inRun=['play','levelup','chest','pause','won','dead'].includes(G.state);
-    const inMenu=['menu','select','shop','settings','trophies','almanac'].includes(G.state);
+    const inMenu=['menu','select','shop','settings','trophies','almanac','challenges'].includes(G.state);
     const musicOn=!this.muted&&(inRun||inMenu);
     const spb=60/138/4;
     if(this.nextT<this.ctx.currentTime)this.nextT=this.ctx.currentTime+.05;
@@ -770,6 +781,12 @@ const CHARS=[
    hp:100,spd:1.18,dmg:1.05,cd:1,mag:1.2,crit:.08,greed:1.5,start:'sand',
    dashKind:'steal',dash:'💰 dash pickpockets coins from enemies',
    chips:['🤑 +50% gold','💰 dash: pickpockets','start: Pocket Sand'],unlock:{ach:'rich',hint:'Bank 1,000 lifetime gold to unlock'}},
+  {id:'karenpc',name:'KAREN',sub:'Final Form (Reformed)',em:'📱',
+   blurb:'She got the lawn. Now she defends it. The system creates its own monsters.',
+   hp:115,spd:1,dmg:1.1,cd:.95,mag:1,crit:.1,greed:1.2,start:'bass',
+   dashKind:'blink',dash:'📱 dash teleports — you cannot outrun paperwork',
+   chips:['📱 +10% crit, +20% gold','📱 dash: teleport','start: Bass Cannon'],
+   unlock:{all:true,hint:'Earn EVERY trophy to unlock'}},
 ];
 
 const WEAPONS={
@@ -864,7 +881,18 @@ const ACHS={
   untouched:{name:'Can\'t Touch Grass',desc:'Take no damage before 5:00',icon:'🛡️'},
   auditor:{name:'Passed the Audit',desc:'Defeat THE INSPECTOR (endless, 15:00+)',icon:'🕴️',unlocks:'map: PERPETUAL CARE'},
   overgrown:{name:'Overgrown',desc:'Win a MOW+ run',icon:'🔥'},
+  glass:{name:'Made of Porcelain',desc:'Win GLASS LAWN (1 HP, no excuses)',icon:'🫗'},
+  solo:{name:'This Is My Spatula',desc:'Win ONE WEAPON WONDER',icon:'☝️'},
+  rush:{name:'Gnome Sayin\'',desc:'Win GNOME RUSH',icon:'⏱️'},
 };
+const CHALLENGES=[
+  {id:'glass',icon:'🫗',name:'GLASS LAWN',
+   desc:'Max HP is 1. Everything kills you. Gold and XP are doubled. Good luck.'},
+  {id:'solo',icon:'☝️',name:'ONE WEAPON WONDER',
+   desc:'No new weapons — your starter and passives only. Mastery or death.'},
+  {id:'rush',icon:'⏱️',name:'GNOME RUSH',
+   desc:'Six minutes. Only gnomes. A very impatient KAREN. Score = thwacks.'},
+];
 const INSPECTOR={id:'inspector',name:'THE INSPECTOR',hp:42000,spd:86,dmg:55,r:50,
   sub:'your lawn\'s final audit. he has questions.'};
 const KAREN={id:'karen',name:'KAREN, FINAL FORM',hp:30000,spd:62,dmg:34,r:46,
@@ -1003,6 +1031,7 @@ function applyZhData(){
     mothlad:['飞蛾小子','灯之友','脆弱。飞快。看到门廊灯绝对会中途离场。','🪽 冲刺更长，冷却更短',['💨 +28% 移速','🪽 冲刺：超长滑翔','初始：蜜蜂伙伴']],
     mowbot:['割草机器人','5150 号机','一台在雷暴中觉醒的骑乘式割草机。只认识草坪。','🚜 冲刺修剪碰到的一切',['🛡 每次受击减免 3 伤害','🚜 冲刺：修剪','初始：草坪飞镖'],'击败卡伦（12:00）解锁'],
     raccoon:['垃圾熊猫','垃圾鉴赏家','在垃圾堆里捡到一把武士刀。其实是泳池捞网。他并不知道。','💰 冲刺顺手从敌人身上偷金币',['🤑 +50% 金币','💰 冲刺：扒窃','初始：袖中砂'],'累计存入 1000 金币解锁'],
+    karenpc:['卡伦','最终形态（改过自新）','她得到了草坪。现在她来守护它。体制造就了它自己的怪物。','📱 冲刺即瞬移——你逃不过文书工作',['📱 +10% 暴击，+20% 金币','📱 冲刺：瞬移','初始：低音炮'],'集齐所有奖杯解锁'],
   };
   for(const id in C){const c=CHARS.find(x=>x.id===id),z=C[id];
     c.name=z[0];c.sub=z[1];c.blurb=z[2];c.dash=z[3];c.chips=z[4];
@@ -1027,6 +1056,9 @@ function applyZhData(){
     fullhouse:['满棚','填满全部 10 个栏位'],untouched:['碰不到草','5:00 前不受任何伤害'],
     auditor:['通过审计','击败稽查员（无尽模式 15:00+）','地图：永恒安息'],
     overgrown:['杂草丛生','赢下一局 修剪+'],onestar:['一星差评','90 秒内击败卡伦'],
+    glass:['瓷做的','赢下 玻璃草坪（1 点生命，没有借口）'],
+    solo:['这是我的锅铲','赢下 一招鲜'],
+    rush:['地精快跑','赢下 地精冲刺'],
   };
   for(const id in A){ACHS[id].name=A[id][0];ACHS[id].desc=A[id][1];if(A[id][2])ACHS[id].unlocks=A[id][2];}
   const M={
@@ -1053,6 +1085,10 @@ function applyZhData(){
   EVENTS[2].b='扫地机器人召回';EVENTS[2].s='固件更新：暴力';
   EVENTS[3].b='鸽群：第二轮';EVENTS[3].s='咕。';
   EVENTS[4].b='鼹鼠起义';EVENTS[4].s='大地本身在反抗';
+  const CH={glass:['玻璃草坪','最大生命变为 1。碰到就死。金币与经验翻倍。祝你好运。'],
+    solo:['一招鲜','不再提供新武器——只有初始武器和被动。要么精通，要么死亡。'],
+    rush:['地精冲刺','六分钟。只有地精。还有一位非常不耐烦的卡伦。分数 = 拍飞数。']};
+  for(const c of CHALLENGES){c.name=CH[c.id][0];c.desc=CH[c.id][1];}
 }
 if(LANG==='zh')applyZhData();
 
@@ -1064,10 +1100,11 @@ let enemies=[],bullets=[],ebullets=[],gems=[],coins=[],pickups=[],parts=[],texts
 let grid=new Map();
 let uidc=1;
 
-let pendingDaily=false;
+let pendingDaily=false,pendingChallenge=null;
 function newRun(charId){
   const c=CHARS.find(x=>x.id===charId);
-  if(pendingDaily){applyMap(MAPS[0]);setSeed(dailySeed());
+  if(pendingChallenge){clearSeed();applyMap(MAPS[0]);}
+  else if(pendingDaily){applyMap(MAPS[0]);setSeed(dailySeed());
     const t=todayStr();
     if(SAVE.streak.date!==t){ // one streak tick per day, kept alive by playing daily
       const y=new Date();y.setDate(y.getDate()-1);
@@ -1075,6 +1112,7 @@ function newRun(charId){
       SAVE.streak={date:t,n:SAVE.streak.date===ystr?(SAVE.streak.n||0)+1:1};
     }}
   else{clearSeed();applyMap(MAPS.find(m=>m.id===SAVE.lastMap)||MAPS[0]);}
+  G.challenge=pendingChallenge; // set before recompute so GLASS LAWN clamps from frame zero
   SAVE.stats.runs=(SAVE.stats.runs||0)+1;persist();
   P={char:c,x:0,y:0,r:13,hp:0,lvl:1,xp:0,xpNext:14,pend:0,
     faceX:1,faceY:0,moving:false,iT:0,dashT:0,dashCd:0,
@@ -1088,8 +1126,8 @@ function newRun(charId){
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
     karenSpawned:false,karenT:0,karenDeadT:0,rerolls:2,
-    daily:pendingDaily,
-    mowplus:!!(!pendingDaily&&SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
+    daily:pendingDaily,challenge:pendingChallenge,
+    mowplus:!!(!pendingDaily&&!pendingChallenge&&SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
   setPlayerModel(charId);
   for(let i=0;i<5;i++){const a=i/5*TAU+rand(.5); // a few greeters so the run opens hot
     spawnEnemy('gnome',Math.cos(a)*rand(260,340),Math.sin(a)*rand(260,340));}
@@ -1114,7 +1152,9 @@ function recompute(){
     armor:(c.armor||0)+(ps.armor||0)*1.5,
     regen:(ps.regen||0)*.8,
   };
+  if(G.challenge==='glass'){P.stats.maxHp=1;}
   if(oldMax&&P.stats.maxHp>oldMax)P.hp+=P.stats.maxHp-oldMax;
+  if(P.hp>P.stats.maxHp)P.hp=P.stats.maxHp;
 }
 function addWeapon(id){markSeen('w_'+id);
   P.weapons.push({id,lvl:1,uid:uidc++,cdT:.5,state:{ang:0,q:[]}});}
@@ -1267,7 +1307,7 @@ function buildPool(){
   for(const id in WEAPONS){
     const owned=P.weapons.find(w=>w.id===id);
     if(owned&&owned.lvl<5)pool.push({kind:'w',id,lvl:owned.lvl+1});
-    else if(!owned&&P.weapons.length<5)pool.push({kind:'w',id,lvl:1});
+    else if(!owned&&P.weapons.length<5&&G.challenge!=='solo')pool.push({kind:'w',id,lvl:1});
   }
   for(const id in PASSIVES){
     const l=P.passives[id]||0;
@@ -1556,18 +1596,21 @@ function spawnKaren(){
   // the lawn falls silent: convert the rabble into a parting gift of gems
   for(const e of enemies)if(!e.boss&&!e.elite&&!e.dead)killEnemy(e);
   G.shake=14;
-  const b=spawnBoss(KAREN);
+  const def=G.challenge==='rush'?{...KAREN,hp:KAREN.hp*.6}:KAREN;
+  const b=spawnBoss(def);
   b.aiT=2.5;b.atk=0;b.voiceT=3;
   return b;
 }
 function director(dt){
+  const rush=G.challenge==='rush';
   let ph=PHASES[0];for(const p of PHASES)if(G.t>=p.t)ph=p;
+  if(rush)ph={rate:4+G.t/45,mix:[['gnome',1]]}; // only gnomes, and so many of them
   let rate=ph.rate*(1+Math.max(0,G.t-720)/240)*(G.mowplus?1.25:1)
     *(G.karenSpawned&&!G.won?0.35:1); // thin the crowd for the finale
   G.spawnAcc+=rate*dt;
   while(G.spawnAcc>=1){G.spawnAcc--;
     if(enemies.length<330)spawnEnemy(wpick(ph.mix));}
-  if(G.eventIdx<EVENTS.length&&G.t>=EVENTS[G.eventIdx].t){
+  if(!rush&&G.eventIdx<EVENTS.length&&G.t>=EVENTS[G.eventIdx].t){
     const ev=EVENTS[G.eventIdx++];banner('⚠ '+ev.b,ev.s);AU.bossCry();
     for(let i=0;i<ev.n;i++){
       if(ev.kind==='ring'){const a=i/ev.n*TAU;
@@ -1577,8 +1620,8 @@ function director(dt){
   }
   if(G.t>=G.nextElite){G.nextElite+=75;
     spawnEnemy('patricia');banner(T('📋 PATRICIA HAS FILED A COMPLAINT'),T('elite spotted — she drops a chest'));}
-  if(G.bossIdx<BOSSES.length&&G.t>=BOSSES[G.bossIdx].at)spawnBoss(BOSSES[G.bossIdx++]);
-  if(!G.karenSpawned&&G.t>=720)spawnKaren(); // the final complaint
+  if(!rush&&G.bossIdx<BOSSES.length&&G.t>=BOSSES[G.bossIdx].at)spawnBoss(BOSSES[G.bossIdx++]);
+  if(!G.karenSpawned&&G.t>=(rush?360:720))spawnKaren(); // the final complaint (rush: she's impatient)
   if(G.karenDeadT&&!G.won&&G.t-G.karenDeadT>1.3)winScreen();
   if(G.won&&G.t>720&&!G.boss){G.endlessBossT-=dt;
     if(G.endlessBossT<=0){G.endlessBossT=150;spawnBoss(choice(BOSSES));}}
@@ -1592,6 +1635,8 @@ function winScreen(){
   ach('survivor');SAVE.stats.wins++;
   SAVE.mowWins[MAP.id]=true;
   if(G.mowplus)ach('overgrown');
+  if(G.challenge){ach(G.challenge);
+    SAVE.chalBest[G.challenge]=Math.max(SAVE.chalBest[G.challenge]||0,G.kills);}
   bankGold();if(G.t>SAVE.best){SAVE.best=G.t;persist();}
   AU.win();
   $('winStats').innerHTML=`${T('You defeated')} <b>${KAREN.name}</b>${G.mowplus?' <b style="color:#ff7a3c">MOW+</b>':''}. ${T('The lawn is finally quiet.')}<br>
@@ -1638,9 +1683,19 @@ function update(dt){
       $('redflash').style.opacity=.5;setTimeout(()=>{if(G.state==='play')$('redflash').style.opacity=0;},250);}
   }
   if((keys[KB.dash]||keys.shift||GP.dash||TOUCH.dash)&&P.dashCd<=0&&P.moving){
-    const fl=P.char.dashKind==='flutter';
-    P.dashT=fl?.34:.22;P.dashCdMax=fl?1.7:2.2;P.dashCd=P.dashCdMax;
-    P.dashHits={};P.stealN=0;P.zoneDropT=0;AU.dash();}
+    const dk=P.char.dashKind;
+    if(dk==='blink'){ // KAREN: you cannot outrun paperwork
+      spray(P.x,P.y,14,'#c0392b',220);
+      P.x+=P.faceX*190;P.y+=P.faceY*190;
+      spray(P.x,P.y,14,'#c0392b',220);
+      P.dashT=.12;P.dashCdMax=2.4;P.dashCd=P.dashCdMax;P.iT=Math.max(P.iT,.3);
+      AU.bossCry();
+    }else{
+      const fl=dk==='flutter';
+      P.dashT=fl?.34:.22;P.dashCdMax=fl?1.7:2.2;P.dashCd=P.dashCdMax;
+      AU.dash();
+    }
+    P.dashHits={};P.stealN=0;P.zoneDropT=0;}
   let spd=P.stats.spd;
   const wasDashing=P.dashT>0;
   if(P.dashT>0){P.dashT-=dt;spd*=3.4;
@@ -1802,14 +1857,14 @@ function update(dt){
       const dx=P.x-g.x,dy=P.y-g.y,L=Math.hypot(dx,dy)||1,sp=520;
       g.x+=dx/L*sp*dt;g.y+=dy/L*sp*dt;
       if(L<16){gems.splice(i,1);
-        gainXp(Math.max(1,Math.round(g.v*(MAP.mods.xp||1)*(G.mowplus?1.3:1))));AU.gem();}}
+        gainXp(Math.max(1,Math.round(g.v*(MAP.mods.xp||1)*(G.mowplus?1.3:1)*(G.challenge==='glass'?2:1))));AU.gem();}}
   }
   for(let i=coins.length-1;i>=0;i--){
     const c=coins[i];const dd=d2(c.x,c.y,P.x,P.y);
     if(dd<mag*mag){const dx=P.x-c.x,dy=P.y-c.y,L=Math.hypot(dx,dy)||1;
       c.x+=dx/L*480*dt;c.y+=dy/L*480*dt;
       if(L<16){coins.splice(i,1);
-        G.gold+=Math.round(c.v*P.stats.greed*(MAP.mods.gold||1)*(G.mowplus?1.6:1));AU.coin();}}
+        G.gold+=Math.round(c.v*P.stats.greed*(MAP.mods.gold||1)*(G.mowplus?1.6:1)*(G.challenge==='glass'?2:1));AU.coin();}}
   }
   for(let i=pickups.length-1;i>=0;i--){
     const pk=pickups[i],rr=22+P.r;
@@ -2273,6 +2328,21 @@ function buildChar(id){
     P_(p,CY(4.5,4.5,4,8),'#1b1b22',-13,5,9,{rz:Math.PI/2});P_(p,CY(4.5,4.5,4,8),'#1b1b22',13,5,9,{rz:Math.PI/2});
     P_(p,CY(5.5,5.5,4,8),'#1b1b22',-13,6,-9,{rz:Math.PI/2});P_(p,CY(5.5,5.5,4,8),'#1b1b22',13,6,-9,{rz:Math.PI/2});
     P_(p,CY(.8,.8,12,4),'#8a8a8a',8,30,-10);P_(p,S(2,5,4),'#ff3b3b',8,37,-10);
+  }else if(id==='karenpc'){
+    // the final form, reformed: player-scale blazer, bob, phone still out
+    P_(p,B(7,9,7),'#26262e',-4,4.5,0);P_(p,B(7,9,7),'#26262e',4,4.5,0);
+    P_(p,B(20,20,11),'#c0392b',0,19,0);
+    P_(p,B(5,8,2.5),'#f2f2f2',0,25,5.7);
+    P_(p,B(5,12,5),'#c0392b',-12,21,0);
+    P_(p,B(5,12,5),'#c0392b',12,25,1.5,{rz:-.6});
+    P_(p,S(7.5,8,6),'#eec39a',0,36,0);
+    P_(p,B(16,7,12),'#e8c84a',0,41.5,0,{rz:.14});
+    P_(p,B(7,12,11),'#e8c84a',-6,36,-1,{rz:.1});
+    P_(p,B(13,2.4,3),'#1b1b22',0,45,3,{rz:.14});
+    P_(p,B(4.5,1.4,1.6),'#26262e',-3,39,6.4,{rz:-.4});P_(p,B(4.5,1.4,1.6),'#26262e',3,39,6.4,{rz:.4});
+    P_(p,S(1.4,5,4),'#f5f0e6',-3,30,5.6);P_(p,S(1.4,5,4),'#f5f0e6',0,29.4,5.9);P_(p,S(1.4,5,4),'#f5f0e6',3,30,5.6);
+    P_(p,B(3.4,6,1),'#1b1b22',16,32,4,{rz:-.3});
+    P_(p,S(.7,4,3),'#6fd3ff',16.6,34,4.6);
   }else if(id==='raccoon'){
     P_(p,S(11,8,6),'#6e6e78',0,16,0,{sy:1.1});
     P_(p,S(8.5,8,6),'#8a8a96',0,34,0);
@@ -2768,8 +2838,14 @@ function refreshMenu(){
     ((SAVE.streak.n||0)>=2?` &nbsp;·&nbsp; 🔥 <b>${SAVE.streak.n}</b>${T('-day streak')}`:'')+
     (allAch?` &nbsp;·&nbsp; <b style="color:var(--gold)">${T('👑 LAWN LEGEND')}</b>`:'');
 }
+function charLocked(c){
+  if(!c.unlock)return false;
+  if(c.unlock.all)return !Object.keys(ACHS).every(id=>SAVE.ach[id]);
+  return !SAVE.ach[c.unlock.ach];
+}
 function buildSelect(){
   const mw=$('mapwrap');mw.innerHTML='';
+  if(pendingChallenge){mw.style.display='none';}else{mw.style.display='flex';}
   if(!MAPS.some(m=>m.id===SAVE.lastMap&&(!m.unlock||SAVE.ach[m.unlock])))SAVE.lastMap='lawn';
   for(const m of MAPS){
     const locked=!!(m.unlock&&!SAVE.ach[m.unlock]);
@@ -2795,7 +2871,7 @@ function buildSelect(){
   }
   const w=$('charwrap');w.innerHTML='';
   for(const c of CHARS){
-    const locked=!!(c.unlock&&!SAVE.ach[c.unlock.ach]);
+    const locked=charLocked(c);
     const d=document.createElement('div');d.className='charcard'+(locked?' locked':'');
     const cnv=document.createElement('canvas');cnv.width=240;cnv.height=240;
     d.appendChild(cnv);c._cnv=cnv;
@@ -2833,12 +2909,36 @@ function buildShop(){
     d.appendChild(b);rows.appendChild(d);
   }
 }
-$('bPlay').onclick=()=>{pendingDaily=false;$('selNote').classList.add('hide');
+$('bPlay').onclick=()=>{pendingDaily=false;pendingChallenge=null;$('selNote').classList.add('hide');
   hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
-$('bDaily').onclick=()=>{pendingDaily=true;
+$('bDaily').onclick=()=>{pendingDaily=true;pendingChallenge=null;
   const n=$('selNote');n.classList.remove('hide');
   n.textContent=`${T('📅 DAILY RUN')} · ${todayStr()} · ${T('Front Lawn')} · ${T('seeded — everyone fights the same waves · score = thwacks')}`;
   hideAll(['scrMenu']);buildSelect();show('scrSelect');G.state='select';};
+/* challenges */
+function buildChal(){
+  const locked=!SAVE.ach.survivor;
+  $('chalNote').textContent=locked?T('🔒 Defeat KAREN once to open the challenges.'):T('Standard rules off. Trophies and bragging rights on.');
+  const w=$('chalRows');w.innerHTML='';
+  for(const c of CHALLENGES){
+    const best=SAVE.chalBest[c.id]||0,done=!!SAVE.ach[c.id];
+    const d=document.createElement('div');
+    d.className='trow '+(locked?'lock':(done?'got':''));
+    d.style.cursor=locked?'default':'pointer';
+    d.innerHTML=`<div class="ti">${locked?'🔒':c.icon}</div><div><div class="tn">${c.name} ${done?'✅':''}</div>
+      <div class="td">${c.desc}${best?` · ${T('best')}: <b>${best}</b> 💀`:''}</div></div>`;
+    d.onclick=()=>{
+      if(locked){AU.hurt();return;}
+      pendingChallenge=c.id;pendingDaily=false;
+      const n=$('selNote');n.classList.remove('hide');
+      n.textContent=`${c.icon} ${c.name} · ${c.desc}`;
+      hideAll(['scrChal']);buildSelect();show('scrSelect');G.state='select';
+    };
+    w.appendChild(d);
+  }
+}
+$('bChal').onclick=()=>{hideAll(['scrMenu']);buildChal();show('scrChal');G.state='challenges';};
+$('bBack6').onclick=()=>{hideAll(['scrChal']);refreshMenu();show('scrMenu');G.state='menu';};
 wireShare('bShare1');wireShare('bShare2');
 const STEAM_URL=''; // set to the Steam store URL once the Coming Soon page is live
 if(STEAM_URL&&!NATIVE){$('bWish').href=STEAM_URL;$('bWish').classList.remove('hide');}
@@ -2877,7 +2977,7 @@ function buildAlmanac(){
   h+=almRow('🪙',T('🪙 Gold is forever').replace('🪙 ',''),T('Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.'),false);
   h+=`<div class="almHead">${T('DEFENDERS')} <small>${T('each one dashes differently')}</small></div>`;
   for(const c of CHARS){
-    const locked=!!(c.unlock&&!SAVE.ach[c.unlock.ach]);
+    const locked=charLocked(c);
     h+=almRow(c.em,c.name+' — '+c.sub,locked?c.unlock.hint:(c.blurb+'<br>'+c.dash),locked);
   }
   h+=`<div class="almHead">${T('ARSENAL')} <small>${T('discovered by using each weapon')}</small></div>`;
@@ -2994,7 +3094,8 @@ $('sImport').onclick=async()=>{
   }
 };
 $('crt').style.display=SAVE.settings.crt?'block':'none';
-$('bBack1').onclick=()=>{hideAll(['scrSelect']);refreshMenu();show('scrMenu');G.state='menu';};
+$('bBack1').onclick=()=>{pendingDaily=false;pendingChallenge=null;$('selNote').classList.add('hide');
+  hideAll(['scrSelect']);refreshMenu();show('scrMenu');G.state='menu';};
 $('bBack2').onclick=()=>{hideAll(['scrShop']);refreshMenu();show('scrMenu');G.state='menu';};
 $('bResume').onclick=togglePause;
 $('bMute').onclick=toggleMute;
@@ -3070,7 +3171,7 @@ Object.assign(ZH,{
 function applyLangHtml(){
   if(LANG!=='zh')return;
   const set=(id,txt)=>{const el=$(id);if(el)el.textContent=txt;};
-  ['bPlay','bDaily','bShop','bTrophies','bAlmanac','bSettings','bResume','bQuit','bRetry',
+  ['bPlay','bDaily','bChal','bShop','bTrophies','bAlmanac','bSettings','bResume','bQuit','bRetry','bBack6',
    'bMenu1','bMenu2','bGoOn','bShare1','bShare2','bChestOk','bFull','modalOk','modalCancel',
    'bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
     const el=$(id);if(el)el.textContent=T(el.textContent.trim());});
