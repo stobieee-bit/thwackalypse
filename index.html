@@ -264,6 +264,14 @@
 
 <div id="banner"><div class="b1"></div><div class="b2"></div></div>
 <div id="bossIntro" class="hide"><div class="bi1"></div><div class="bi2"></div></div>
+<!-- first-run coach card: pointer-events:none backdrop+panel so the lawn stays playable behind it; only GOT IT captures -->
+<div id="scrCoach" class="hide" style="position:fixed;inset:0;z-index:16;pointer-events:none;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:rgba(8,14,8,.9);border:3px solid #3a5230;border-radius:16px;padding:18px 22px;max-width:min(440px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.6);text-align:left;">
+    <div style="font-family:Impact,'Arial Black',sans-serif;font-size:24px;color:var(--lime);letter-spacing:1px" id="coachTitle">QUICK START</div>
+    <div style="font-size:14px;color:#cfe8c0;line-height:1.7;margin:10px 0 12px" id="coachBody"></div>
+    <button class="btn sm" id="coachOk" style="pointer-events:auto;margin:0">GOT IT</button>
+  </div>
+</div>
 <div id="toasts"></div>
 
 <div id="scrMenu" class="screen">
@@ -284,9 +292,9 @@
   <div class="stats-line" id="menuStats"></div>
   <a id="bWish" class="btn sm hide" style="display:inline-block;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
-  <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
+  <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.5 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.6 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -491,7 +499,8 @@ const ZH={
   'LV ':'等级 ','no build yet':'还没有配置',
   // banners & popups
   'DEFEND THE LAWN!':'保卫草坪！','they\'re coming for the grass':'他们冲着草来了',
-  'WASD moves · mouse looks · wheel zooms':'WASD 移动 · 鼠标视角 · 滚轮缩放',
+  'WASD move · weapons AUTO-FIRE · just survive':'WASD 移动 · 武器自动开火 · 努力生存',
+  'move with left thumb · weapons AUTO-FIRE':'左手拇指移动 · 武器自动开火',
   'left thumb moves · right thumb looks':'左手拇指移动 · 右手拇指视角',
   '🔥 MOW+ — DEFEND THE LAWN!':'🔥 修剪+ ——保卫草坪！','ENDLESS MODE':'无尽模式',
   'how long can the lawn last?':'草坪还能撑多久？',
@@ -499,6 +508,9 @@ const ZH={
   ' EVICTED!':'被驱逐了！','the lawn breathes easier':'草坪松了一口气',
   'your':'你的','has ascended':'已飞升',
   'elite spotted — she drops a chest':'精英出现——她会掉落宝箱',
+  '🧬 EVOLUTION READY!':'🧬 进化就绪！','open a chest to ascend a weapon':'开启宝箱即可让武器飞升',
+  'XP! KEEP COLLECTING 💎':'经验！继续收集 💎',
+  '💡 Chests EVOLVE a weapon — max it to Lv5 and hold its paired passive at Lv2+. Elites and bosses drop chests.':'💡 宝箱可进化武器——把武器升满 5 级并让搭配的被动达到 2 级以上。精英和头目会掉落宝箱。',
   '📋 PATRICIA HAS FILED A COMPLAINT':'📋 帕特丽夏提交了投诉',
   'THWACK!':'啪！','DENIED':'无效','FOUND YOU':'找到你了','WE\'RE NOT DONE':'咱们没完',
   'MANAGER VOICE':'经理之声','HOA, ASSEMBLE!':'业委会，集合！','I AM THE MANAGER':'我就是经理',
@@ -1162,7 +1174,8 @@ function newRun(charId){
   CAM.yaw=0;CAM.pitch=.62;CAM.dist=300;
   banner(T(G.mowplus?'🔥 MOW+ — DEFEND THE LAWN!':'DEFEND THE LAWN!'),
     T(document.body.classList.contains('touch')?
-    'left thumb moves · right thumb looks':'WASD moves · mouse looks · wheel zooms'));
+    'move with left thumb · weapons AUTO-FIRE':'WASD move · weapons AUTO-FIRE · just survive'));
+  if(SAVE.stats.runs<=1&&!pendingDaily&&!pendingChallenge&&!G.challenge)showFirstRunCard();
 }
 function recompute(){
   const c=P.char,u=SAVE.upg,ps=P.passives;
@@ -1265,6 +1278,7 @@ function hurtPlayer(d){
 }
 function die(){
   if(G.dying)return;
+  dismissCoach();
   if(G.karenDeadT&&!G.won){winScreen();return;} // KAREN is already beaten — her lingering bullets can't steal the win
   if(SAVE.upg.revive>0&&!G.revived){ // SECOND WIND
     G.revived=true;
@@ -1398,6 +1412,10 @@ function applyChoice(p){
     if(p.lvl>=5)ach('maxed');
   }else{P.passives[p.id]=p.lvl;recompute();if(p.id==='snacks'){P.hp=Math.min(P.stats.maxHp,P.hp+25);}}
   if(P.weapons.length>=5&&Object.keys(P.passives).length>=5)ach('fullhouse');
+  if(evoReady()&&!SAVE.seen.evoready){ // first time a weapon qualifies: teach the chest payoff (once ever)
+    markSeen('evoready');
+    banner(T('🧬 EVOLUTION READY!'),T('open a chest to ascend a weapon'));
+  }
   updateWrow();
 }
 function closeLevelUp(){
@@ -1427,6 +1445,12 @@ function openChest(big){
   if(evolvedW)banner('🧬 '+EVO[evolvedW.id].name+'!',T('your')+' '+WEAPONS[evolvedW.id].name+' '+T('has ascended'));
   const cc=$('chestCard');cc.innerHTML='';
   for(const p of got){const card=makeCard(p,()=>{});card.style.cursor='default';cc.appendChild(card);}
+  if(!SAVE.seen.chesttip){ // first chest ever: explain the evolution loop
+    markSeen('chesttip');
+    const tip=document.createElement('div');tip.className='small';tip.style.cssText='margin:8px auto 0;color:#ffd23e;font-size:12px;max-width:min(440px,92vw)';
+    tip.textContent=T('💡 Chests EVOLVE a weapon — max it to Lv5 and hold its paired passive at Lv2+. Elites and bosses drop chests.');
+    cc.appendChild(tip);
+  }
   spray(P.x,P.y,30,'#ffd23e',260);
   show('scrChest');
 }
@@ -1672,7 +1696,7 @@ function director(dt){
     G.inspectorMult*=3;b.aiT=4;}
 }
 function winScreen(){
-  G.won=true;
+  G.won=true;dismissCoach();
   ach('survivor');SAVE.stats.wins++;
   if(!G.challenge)SAVE.mowWins[MAP.id]=true; // MOW+ unlocks are earned under standard rules only
   if(G.mowplus)ach('overgrown');
@@ -1897,7 +1921,9 @@ function update(dt){
       const dx=P.x-g.x,dy=P.y-g.y,L=Math.hypot(dx,dy)||1,sp=520;
       g.x+=dx/L*sp*dt;g.y+=dy/L*sp*dt;
       if(L<16){gems.splice(i,1);
-        gainXp(Math.max(1,Math.round(g.v*(MAP.mods.xp||1)*(G.mowplus?1.3:1)*(G.challenge==='glass'?2:1))));AU.gem();}}
+        gainXp(Math.max(1,Math.round(g.v*(MAP.mods.xp||1)*(G.mowplus?1.3:1)*(G.challenge==='glass'?2:1))));AU.gem();
+        if(!SAVE.seen.gemtip){markSeen('gemtip'); // first gem collected ever — confirm gems = XP (independent of dmgnum setting)
+          texts.push({x:P.x,y:P.y,h:56,life:1.4,str:T('XP! KEEP COLLECTING 💎'),col:'#71f24c',size:18});}}}
   }
   for(let i=coins.length-1;i>=0;i--){
     const c=coins[i];const dd=d2(c.x,c.y,P.x,P.y);
@@ -2868,9 +2894,30 @@ function drawTexts(){
 function show(id){$(id).classList.remove('hide');}
 function hideAll(ids){for(const i of ids)$(i).classList.add('hide');}
 function toggleMute(){AU.muted=!AU.muted;$('bMute').textContent=T(AU.muted?'MUTE: ON':'MUTE: OFF');}
+/* first-run coach card: shown once (runs<=1), gameplay continues live behind it */
+let coachTimer=null;
+function showFirstRunCard(){
+  const touch=document.body.classList.contains('touch'),zh=LANG==='zh';
+  $('coachTitle').textContent=zh?'快速上手':'QUICK START';
+  const lines=zh?[
+    '🕹️ <b>武器会自动开火</b>——你只需移动。',
+    '💎 走过 gems 即可升级。',
+    touch?'💨 点击冲刺键可获得短暂无敌。':'💨 按 <b>空格</b> 冲刺，短暂无敌。'
+  ]:[
+    '🕹️ <b>Your weapons fire themselves</b> — just MOVE.',
+    '💎 Walk over 💎 gems to level up.',
+    touch?'💨 Tap the dash button for an instant of invincibility.':'💨 Tap <b>SPACE</b> to dash through danger (i-frames).'
+  ];
+  $('coachBody').innerHTML=lines.join('<br>');
+  $('coachOk').textContent=zh?'明白了':'GOT IT';
+  show('scrCoach');
+  clearTimeout(coachTimer);coachTimer=setTimeout(dismissCoach,7000);
+}
+function dismissCoach(){clearTimeout(coachTimer);hideAll(['scrCoach']);}
+$('coachOk').onclick=dismissCoach;
 function togglePause(){
   if(G.dying)return; // no pausing the death cam — it strands PAUSED over the end screens
-  if(G.state==='play'){G.state='pause';
+  if(G.state==='play'){dismissCoach();G.state='pause';
     let s='';
     for(const w of P.weapons)s+=`${wIcon(w)} ${wName(w)} ${w.evo?'★':T('LV ')+w.lvl} &nbsp; `;
     s+='<br>';
@@ -3241,11 +3288,11 @@ function applyLangHtml(){
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
   if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.5 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[1])smalls[1].textContent='v2.6 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))
-    ctl.innerHTML='<kbd>WASD</kbd> 移动 · 🖱 视角（点击捕获） · <kbd>空格</kbd> 冲刺 · <kbd>P</kbd> 暂停 · <kbd>M</kbd> 静音 · 🎮 手柄 · 📱 触屏';
+    ctl.innerHTML='<kbd>WASD</kbd> 移动 · 🖱 视角（点击捕获） · <kbd>空格</kbd> 冲刺 · <b style="color:var(--lime)">武器自动开火</b> · 🎮 手柄 · 📱 触屏';
   $('rotateHint').textContent='📱 旋转至横屏体验完整草坪';
 }
 applyLangHtml();
