@@ -110,9 +110,14 @@
   #btnDash{display:none;position:absolute;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:80px;height:80px;border-radius:50%;
     border:3px solid #6fd3ff;background:rgba(18,38,48,.6);font-size:34px;pointer-events:auto;color:#fff;}
   #btnDash.cd{border-color:#39637a;opacity:.5;}
+  #btnUlt{display:none;position:absolute;right:calc(108px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:62px;height:62px;border-radius:50%;
+    border:3px solid #ffd23e;background:rgba(48,38,8,.6);font-size:26px;pointer-events:auto;color:#fff;transition:box-shadow .15s,opacity .15s;}
+  #btnUlt.off{opacity:.32;}
+  #btnUlt.rdy{box-shadow:0 0 18px rgba(255,210,62,.95);}
   #btnPause2{display:none;position:absolute;right:calc(12px + env(safe-area-inset-right,0px));top:calc(112px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:50%;
     border:2px solid #555;background:rgba(0,0,0,.55);color:#fff;font-size:17px;pointer-events:auto;align-items:center;justify-content:center;}
   body.touch #btnDash{display:block;}
+  body.touch #btnUlt{display:block;}
   body.touch #btnPause2{display:flex;}
   body.touch #dashwrap{display:none;}
   #rotateHint{display:none;color:var(--gold);font-weight:700;font-size:13px;margin-top:8px;}
@@ -162,11 +167,14 @@
   #banner .b1{font-family:Impact,"Arial Black",sans-serif;font-size:44px;color:var(--gold);letter-spacing:2px;text-shadow:0 4px 0 #6b4d00,0 8px 20px #000;}
   #banner .b2{font-weight:700;color:#fff;text-shadow:0 2px 4px #000;font-size:16px;margin-top:4px;}
   #banner.show{animation:ban 2.6s ease forwards;}
+  #banner.evict .b1{font-size:min(11vw,96px);color:#fff;text-shadow:0 0 24px rgba(255,210,62,.9),0 4px 0 #6b4d00,0 8px 20px #000;}
   @keyframes ban{0%{transform:translate(-50%,-50%) scale(0)}12%{transform:translate(-50%,-50%) scale(1.1)}
     18%{transform:translate(-50%,-50%) scale(1)}82%{opacity:1;transform:translate(-50%,-50%) scale(1)}
     100%{opacity:0;transform:translate(-50%,-65%) scale(1)}}
   #redflash{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(255,30,30,.45));
     opacity:0;pointer-events:none;z-index:9;transition:opacity .25s;}
+  #whiteflash{position:fixed;inset:0;background:radial-gradient(ellipse at center,rgba(255,255,255,.95),rgba(255,240,180,.5) 60%,transparent);
+    opacity:0;pointer-events:none;z-index:9;transition:opacity .18s;}
   #bossIntro{position:fixed;inset:0;z-index:14;pointer-events:none;display:flex;flex-direction:column;
     align-items:center;justify-content:center;background:rgba(0,0,0,.5);animation:biFade 2s ease forwards;}
   #bossIntro::before,#bossIntro::after{content:'';position:absolute;left:0;right:0;height:11vh;background:#000;}
@@ -247,6 +255,7 @@
 <canvas id="ov"></canvas>
 <div id="crt"></div>
 <div id="redflash"></div>
+<div id="whiteflash"></div>
 
 <div id="hud" class="hide">
   <div id="xpwrap"><div id="xpfill"></div></div>
@@ -258,6 +267,7 @@
   <div id="dashwrap"><div id="dashlab">DASH [SPACE]</div><div class="barbk" style="height:8px"><div id="dashfill"></div></div></div>
   <div id="bosswrap"><div id="bossname"></div><div class="barbk" style="height:16px"><div id="bossfill"></div></div></div>
   <button id="btnDash">💨</button>
+  <button id="btnUlt" class="off">⚡</button>
   <button id="btnPause2">⏸</button>
 </div>
 <div id="joy"><div id="joyRing"></div><div id="joyDot"></div></div>
@@ -294,7 +304,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.6 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.7 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -397,6 +407,7 @@
   <div class="deadstats" id="deadStats"></div>
   <div><button class="btn" id="bRetry">ONE MORE LAWN</button>
   <button class="btn alt" id="bShare1">📋 SHARE</button>
+  <button class="btn alt" id="bSnap1">📸 SAVE IMAGE</button>
   <button class="btn alt" id="bMenu1">MENU</button></div>
   <a id="bWish2" class="btn sm hide" style="display:inline-block;margin-top:6px;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
 </div>
@@ -406,6 +417,7 @@
   <div class="deadstats" id="winStats"></div>
   <div><button class="btn" id="bGoOn">KEEP MOWING (endless)</button>
   <button class="btn alt" id="bShare2">📋 SHARE</button>
+  <button class="btn alt" id="bSnap2">📸 SAVE IMAGE</button>
   <button class="btn alt" id="bMenu2">MENU</button></div>
   <a id="bWish3" class="btn sm hide" style="display:inline-block;margin-top:6px;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
 </div>
@@ -441,7 +453,7 @@ const $=id=>document.getElementById(id);
 const KEYDEF={up:'w',down:'s',left:'a',right:'d',dash:' '};
 const SAVE_DEF={gold:0,best:0,upg:{dmg:0,hp:0,spd:0,greed:0,revive:0,start:0},ach:{},lastMap:'lawn',
   streak:{date:'',n:0},
-  mowplus:0,mowWins:{},bests:{},daily:null,seen:{},chalBest:{},
+  mowplus:0,mowWins:{},bests:{},daily:null,seen:{},chalBest:{},bestCombo:0,
   settings:{music:1,sfx:1,shake:1,crt:1,dmgnum:1,sens:1,res:270,lang:'en',keys:{...KEYDEF}},
   stats:{totalGold:0,totalKills:0,wins:0,evos:0}};
 const NATIVE=window.native||null; // Electron/Steam bridge (preload.js); null on the web
@@ -509,6 +521,9 @@ const ZH={
   'your':'你的','has ascended':'已飞升',
   'elite spotted — she drops a chest':'精英出现——她会掉落宝箱',
   '🧬 EVOLUTION READY!':'🧬 进化就绪！','open a chest to ascend a weapon':'开启宝箱即可让武器飞升',
+  '🌪️ LAWN FORCE!':'🌪️ 草坪天威！','the HOA never saw it coming':'业委会猝不及防',
+  '⚡ ULTIMATE READY':'⚡ 终极已就绪','⚡ ULTIMATE':'⚡ 终极','best combo':'最高连击','NEW RECORD!':'新纪录！','combo':'连击',
+  '📸 SAVE IMAGE':'📸 保存图片','✅ SAVED!':'✅ 已保存！',
   'XP! KEEP COLLECTING 💎':'经验！继续收集 💎',
   '💡 Chests EVOLVE a weapon — max it to Lv5 and hold its paired passive at Lv2+. Elites and bosses drop chests.':'💡 宝箱可进化武器——把武器升满 5 级并让搭配的被动达到 2 级以上。精英和头目会掉落宝箱。',
   '📋 PATRICIA HAS FILED A COMPLAINT':'📋 帕特丽夏提交了投诉',
@@ -671,6 +686,7 @@ addEventListener('keydown',e=>{
   }
   keys[k]=true;
   if(k==='m')toggleMute();
+  if((k==='q'||k==='e')&&G.state==='play')G.ultLatch=true; // ULTIMATE release
   if((k==='p'||k==='escape')&&(G.state==='play'||G.state==='pause'))togglePause();
   if(k==='escape'){ // menu screens back out (scroll-trapped layouts always have an exit)
     const esc={settings:'bBack3',shop:'bBack2',select:'bBack1',trophies:'bBack4',almanac:'bBack5',challenges:'bBack6'};
@@ -768,6 +784,8 @@ function bindTouch(){
   bd.addEventListener('touchstart',e=>{e.preventDefault();TOUCH.dash=true;},{passive:false});
   bd.addEventListener('touchend',e=>{e.preventDefault();TOUCH.dash=false;},{passive:false});
   bd.addEventListener('touchcancel',()=>TOUCH.dash=false);
+  const bu=$('btnUlt');
+  bu.addEventListener('touchstart',e=>{e.preventDefault();if(G.state==='play'&&G.ult>=1)G.ultLatch=true;},{passive:false});
   $('btnPause2').addEventListener('click',()=>{if(G.state==='play'||G.state==='pause')togglePause();});
 }
 bindTouch();bindCamera();
@@ -1132,7 +1150,8 @@ if(LANG==='zh')applyZhData();
 
 /* ============================== GAME STATE ============================== */
 const G={state:'menu',t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
-  kills:0,gold:0,dmgDealt:0,bankedGold:0,bankedKills:0,won:false,endlessBossT:0,dying:false};
+  kills:0,gold:0,dmgDealt:0,bankedGold:0,bankedKills:0,won:false,endlessBossT:0,dying:false,
+  comboMax:0,comboPunch:0,ult:0,ultLatch:false};
 let P=null;
 let enemies=[],bullets=[],ebullets=[],gems=[],coins=[],pickups=[],parts=[],texts=[],rings=[],bees=[],pets=[],zones=[];
 let grid=new Map();
@@ -1161,6 +1180,7 @@ function newRun(charId){
   enemies=[];bullets=[];ebullets=[];gems=[];coins=[];pickups=[];parts=[];texts=[];rings=[];bees=[];pets=[];zones=[];
   Object.assign(G,{t:0,ts:1,shake:0,spawnAcc:0,eventIdx:0,bossIdx:0,nextElite:150,
     kills:0,gold:0,dmgDealt:0,bankedGold:0,bankedKills:0,won:false,endlessBossT:0,boss:null,dying:false,
+    comboMax:0,comboPunch:0,ult:0,ultLatch:false,
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
     karenSpawned:false,karenT:0,karenDeadT:0,rerolls:2,
@@ -1227,6 +1247,8 @@ function hitEnemy(e,dmg,opts={}){
 function killEnemy(e){
   e.dead=true;G.kills++;
   G.combo++;G.comboT=1.2;
+  G.comboMax=Math.max(G.comboMax,G.combo);G.comboPunch=1; // HUD pop
+  if(!e.boss)G.ult=Math.min(1,G.ult+(e.elite?0.06:0.018)); // charge ULTIMATE off the horde, not bosses
   if([15,30,50,100,200,400].includes(G.combo)){
     popText(P.x,P.y,T('COMBO x')+G.combo,'#6fd3ff',19+Math.min(10,G.combo/20),74);
     AU.tone(500+G.combo*2,800+G.combo*2,.12,'square',.12);}
@@ -1243,6 +1265,7 @@ function killEnemy(e){
       G.karenDeadT=G.t;
       if(G.t-G.karenT<90)ach('onestar');
       pickups.push({x:e.x-40,y:e.y-20,kind:'phone'}); // she dropped the evidence
+      G.ts=Math.min(G.ts,.12);spray(e.x,e.y,60,'#ffd23e',420); // the money shot
     }
     if(['hoa','landlord','gentri'].includes(e.type))G.bossesRun.push(e.type);
     if(new Set(G.bossesRun).size>=3)ach('sweep');
@@ -1251,6 +1274,7 @@ function killEnemy(e){
     pickups.push({x:e.x,y:e.y,kind:'chest',big:true});
     pickups.push({x:e.x+50,y:e.y+20,kind:'burger'});
     banner(e.name+T(' EVICTED!'),T('the lawn breathes easier'));
+    flashEvict(e.type==='karen');
   }else{
     G.shake=Math.min(G.shake+(e.elite?6:1.2),10);
     dropGem(e.x,e.y,e.xp);
@@ -1299,7 +1323,7 @@ function die(){
     $('deadStats').innerHTML=
       `${T('Survived')} <b>${fmtT(G.t)}</b> · ${T('Level')} <b>${P.lvl}</b><br>`+
       `💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')}<br>`+
-      `${T('Total damage')}: <b>${G.dmgDealt.toLocaleString()}</b>`+dailyLineHtml()+weaponStatsHtml();
+      `${T('Total damage')}: <b>${G.dmgDealt.toLocaleString()}</b>`+comboLineHtml()+dailyLineHtml()+weaponStatsHtml();
     show('scrDead');G.state='dead';
   },900);
 }
@@ -1314,8 +1338,14 @@ function bankGold(){ // banks the delta since the last call, so post-win endless
     if(!SAVE.daily||SAVE.daily.date!==t||G.kills>SAVE.daily.score)
       SAVE.daily={date:t,score:G.kills};}
   if(G.challenge)SAVE.chalBest[G.challenge]=Math.max(SAVE.chalBest[G.challenge]||0,G.kills);
+  G.newComboRecord=(G.comboMax||0)>(SAVE.bestCombo||0); // captured before the max() for the end-screen tag
+  SAVE.bestCombo=Math.max(SAVE.bestCombo||0,G.comboMax||0);
   if(SAVE.stats.totalGold>=1000)ach('rich');
   persist();}
+function comboLineHtml(){
+  if(!(G.comboMax>0))return '';
+  return `<br>🔥 ${T('best combo')} x<b>${G.comboMax}</b>${G.newComboRecord?' <b style="color:var(--gold)">'+T('NEW RECORD!')+'</b>':''}`;
+}
 function dailyLineHtml(){
   if(!G.daily)return '';
   const best=(SAVE.daily&&SAVE.daily.date===todayStr())?SAVE.daily.score:0;
@@ -1323,7 +1353,7 @@ function dailyLineHtml(){
 }
 function shareText(){
   return `🩴 THWACKALYPSE 64${G.daily?' '+T('DAILY')+' '+todayStr():''} — ${T('survived')} ${fmtT(G.t)}, `+
-    `${G.kills.toLocaleString()} ${T('thwacked')}${G.won?', '+T('KAREN evicted'):''} → https://stobieee-bit.github.io/thwackalypse/`;
+    `${G.kills.toLocaleString()} ${T('thwacked')}${G.comboMax>=15?', '+T('combo')+' x'+G.comboMax:''}${G.won?', '+T('KAREN evicted'):''} → https://stobieee-bit.github.io/thwackalypse/`;
 }
 function wireShare(btnId){
   const b=$(btnId);
@@ -1335,6 +1365,35 @@ function wireShare(btnId){
     }else b.textContent=T('❌ NO CLIPBOARD');
     setTimeout(()=>b.textContent=T('📋 SHARE'),2000);
   };
+}
+/* compose the final 3D frame + damage/combo overlay + a branded footer into one shareable PNG */
+function captureRun(btnId){
+  const b=$(btnId),orig=T('📸 SAVE IMAGE');
+  try{
+    renderer.render(scene,camera); // refresh the (preserved) drawing buffer
+    const W=ov.width,H=ov.height; // full-res overlay dims; cv (internal res) upscales into it
+    const c=document.createElement('canvas');c.width=W;c.height=H;
+    const g=c.getContext('2d');g.imageSmoothingEnabled=true;
+    g.drawImage(cv,0,0,W,H);g.drawImage(ov,0,0);
+    const fh=Math.round(H*0.085);
+    g.fillStyle='rgba(6,10,6,.85)';g.fillRect(0,H-fh,W,fh);
+    g.textAlign='center';g.textBaseline='middle';
+    g.fillStyle='#cfe8c0';g.font=`700 ${Math.round(fh*0.3)}px "Segoe UI",system-ui,sans-serif`;
+    g.fillText(shareText().split(' → ')[0],W/2,H-fh*0.6);
+    g.fillStyle='#9fff4a';g.font=`800 ${Math.round(fh*0.26)}px Impact,"Arial Black",sans-serif`;
+    g.fillText('🩴 stobieee-bit.github.io/thwackalypse',W/2,H-fh*0.24);
+    c.toBlob(blob=>{
+      if(!blob){b.textContent=T('FAILED');setTimeout(()=>b.textContent=orig,1800);return;}
+      try{
+        const file=new File([blob],'thwackalypse.png',{type:'image/png'});
+        if(navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({files:[file],title:'THWACKALYPSE 64'}).catch(()=>{});
+        else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='thwackalypse.png';
+          document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
+        b.textContent=T('✅ SAVED!');
+      }catch(e){b.textContent=T('FAILED');}
+      setTimeout(()=>b.textContent=orig,1800);
+    },'image/png');
+  }catch(e){b.textContent=T('FAILED');setTimeout(()=>b.textContent=orig,1800);}
 }
 function spray(x,y,n,col,spd=200){
   if(parts.length>460)return;
@@ -1704,7 +1763,7 @@ function winScreen(){
   bankGold();
   AU.win();
   $('winStats').innerHTML=`${T('You defeated')} <b>${KAREN.name}</b>${G.mowplus?' <b style="color:#ff7a3c">MOW+</b>':''}. ${T('The lawn is finally quiet.')}<br>
-    💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')} · ${T('Level')} <b>${P.lvl}</b>`+dailyLineHtml()+weaponStatsHtml();
+    💀 <b>${G.kills}</b> ${T('thwacked')} · 🪙 <b>${G.gold}</b> ${T('banked')} · ${T('Level')} <b>${P.lvl}</b>`+comboLineHtml()+dailyLineHtml()+weaponStatsHtml();
   show('scrWin');G.state='won';
 }
 function weaponStatsHtml(){
@@ -1737,6 +1796,7 @@ function update(dt){
   if(P.moving){const L=Math.hypot(mx,my);
     P.faceX=mx/L;P.faceY=my/L;
     if(L>1){mx/=L;my/=L;}}
+  if(G.ultLatch){G.ultLatch=false;if(G.ult>=1&&G.state==='play')fireUlt();}
   P.dashCd-=dt;P.iT-=dt;
   if(P.stats.regen>0)P.hp=Math.min(P.stats.maxHp,P.hp+P.stats.regen*dt);
   if(!G.unt300&&G.t>=300){G.unt300=true;if(G.dmgTakenRun===0)ach('untouched');}
@@ -1978,6 +2038,7 @@ function update(dt){
     if(t.life<=0)texts.splice(i,1);}
 
   G.shake=Math.max(0,G.shake-dt*22);
+  if(G.comboPunch>0)G.comboPunch=Math.max(0,G.comboPunch-dt*4);
   if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}
 
   updateHud();
@@ -1992,6 +2053,7 @@ function updateHud(){
   $('dashfill').style.width=clamp((1-P.dashCd/(P.dashCdMax||2.2))*100,0,100)+'%';
   $('dashfill').style.background=P.dashCd<=0?'#6fd3ff':'#39637a';
   $('btnDash').classList.toggle('cd',P.dashCd>0);
+  {const bu=$('btnUlt'),rdy=G.ult>=1;bu.classList.toggle('rdy',rdy);bu.classList.toggle('off',!rdy);}
   if(G.boss&&!G.boss.dead){$('bosswrap').style.display='block';
     const bem={hoa:'⚖️',landlord:'🎩',gentri:'🏗️',karen:'📱',inspector:'🕴️'}[G.boss.type]||'☠️';
     $('bossname').textContent=bem+' '+G.boss.name;
@@ -2017,6 +2079,28 @@ function banner(b1,b2=''){
   const b=$('banner');b.classList.remove('show');void b.offsetWidth;
   b.querySelector('.b1').textContent=b1;b.querySelector('.b2').textContent=b2;
   b.classList.add('show');
+}
+/* boss-eviction money-shot: big banner + a white flash, the latter a11y-gated
+   (SAVE.settings.shake==0 is the calm/reduced-motion state — no full-screen flash) */
+function flashEvict(karen){
+  if(SAVE.settings.shake){
+    const w=$('whiteflash');w.style.opacity=karen?.95:.7;
+    setTimeout(()=>{w.style.opacity=0;},karen?220:150);
+  }
+  const b=$('banner');b.classList.add('evict');
+  setTimeout(()=>b.classList.remove('evict'),1500);
+}
+/* ULTIMATE: charged by thwacking the horde, released for a screen-clearing shockwave */
+function fireUlt(){
+  if(!P||G.ult<1)return;
+  G.ult=0;
+  rings.push({x:P.x,y:P.y,r:14,max:760,life:.5,col:0xffd23e});
+  spray(P.x,P.y,80,'#ffd23e',520);spray(P.x,P.y,40,'#fff',420);
+  G.shake=18;G.ts=.2;AU.boom();AU.win();
+  if(SAVE.settings.shake){const w=$('whiteflash');w.style.opacity=.55;setTimeout(()=>{w.style.opacity=0;},150);}
+  for(const e of enemies){if(e.dead)continue; // iterate directly — independent of the per-frame grid build
+    const t=720+e.r;if(d2(P.x,P.y,e.x,e.y)<t*t)hitEnemy(e,700,{fx:P.x,fy:P.y,kb:520,src:'ult'});}
+  banner(T('🌪️ LAWN FORCE!'),T('the HOA never saw it coming'));
 }
 
 /* ============================== THREE.JS RENDERER ============================== */
@@ -2888,6 +2972,33 @@ function drawTexts(){
     octx.restore();
   }
   octx.globalAlpha=1;
+  // ---- ULTIMATE charge meter (top-center, under the timer) ----
+  {
+    const uw=Math.min(180,innerWidth*.4),ux=innerWidth/2-uw/2,uy=innerWidth<640?52:60,full=G.ult>=1;
+    octx.fillStyle='rgba(0,0,0,.45)';octx.fillRect(ux,uy,uw,9);
+    octx.fillStyle=full?`hsl(${Math.round((perfT*220)%360)},90%,60%)`:'#ffd23e';
+    octx.fillRect(ux,uy,uw*clamp(G.ult,0,1),9);
+    octx.strokeStyle='#000';octx.lineWidth=1.5;octx.strokeRect(ux,uy,uw,9);
+    octx.textAlign='center';octx.lineWidth=3;octx.strokeStyle='#000';
+    octx.font='800 12px Impact,"Arial Black",sans-serif';
+    const lab=full?T('⚡ ULTIMATE READY'):T('⚡ ULTIMATE');
+    octx.strokeText(lab,innerWidth/2,uy-3);
+    octx.fillStyle=full?'#fff':'#9ab59a';octx.fillText(lab,innerWidth/2,uy-3);
+  }
+  // ---- COMBO meter (top-center, below the ult bar) — itself a screenshot artifact ----
+  if(G.combo>=10){
+    const cx=innerWidth/2,frac=clamp(G.comboT/1.2,0,1);
+    const fs=Math.round(Math.min(64,24+G.combo*.34)*(1+(G.comboPunch||0)*.5));
+    const y=innerWidth<640?92:104;
+    octx.textAlign='center';octx.font=`800 ${fs}px Impact,"Arial Black",sans-serif`;
+    const str=T('COMBO x')+G.combo;
+    octx.lineWidth=5;octx.strokeStyle='#000';octx.strokeText(str,cx,y);
+    octx.fillStyle=`hsl(${Math.round(frac*190)},92%,60%)`;octx.fillText(str,cx,y);
+    const bw=Math.min(260,120+G.combo);
+    octx.fillStyle='rgba(0,0,0,.5)';octx.fillRect(cx-bw/2,y+7,bw,6);
+    octx.fillStyle=`hsl(${Math.round(frac*190)},92%,55%)`;octx.fillRect(cx-bw/2,y+7,bw*frac,6);
+  }
+  octx.globalAlpha=1;
 }
 
 /* ============================== UI / FLOW ============================== */
@@ -3039,6 +3150,7 @@ function buildChal(){
 $('bChal').onclick=()=>{hideAll(['scrMenu']);buildChal();show('scrChal');G.state='challenges';};
 $('bBack6').onclick=()=>{hideAll(['scrChal']);refreshMenu();show('scrMenu');G.state='menu';};
 wireShare('bShare1');wireShare('bShare2');
+$('bSnap1').onclick=()=>captureRun('bSnap1');$('bSnap2').onclick=()=>captureRun('bSnap2');
 const STEAM_URL=''; // set to the Steam store URL once the Coming Soon page is live
 if(STEAM_URL&&!NATIVE){ // light up the wishlist CTA on the menu AND both peak-emotion end screens
   for(const id of ['bWish','bWish2','bWish3']){const el=$(id);if(el){el.href=STEAM_URL;el.classList.remove('hide');}}
@@ -3074,6 +3186,7 @@ function buildAlmanac(){
   h+=almRow('🕹️',T('🕹️ Survive 12 minutes').replace('🕹️ ',''),T('Move constantly. Weapons fire themselves. At 12:00, management arrives in person.'),false);
   h+=almRow('💎',T('💎 Gems are XP').replace('💎 ',''),T('Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).'),false);
   h+=almRow('💨',T('💨 Dash through danger').replace('💨 ',''),T('Dashing grants brief invincibility. Use it to pass through crowds and bullets.'),false);
+  h+=almRow('⚡',T('⚡ Charge your ULTIMATE').replace('⚡ ',''),T('Thwacking the horde fills the ⚡ meter. At full, press Q (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.'),false);
   h+=almRow('🧬',T('🧬 Evolve your weapons').replace('🧬 ',''),T('Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.'),false);
   h+=almRow('🪙',T('🪙 Gold is forever').replace('🪙 ',''),T('Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.'),false);
   h+=`<div class="almHead">${T('DEFENDERS')} <small>${T('each one dashes differently')}</small></div>`;
@@ -3232,6 +3345,7 @@ function pollGamepad(){
   if(bp(14))GP.x=-1;if(bp(15))GP.x=1;if(bp(12))GP.y=-1;if(bp(13))GP.y=1;
   GP.dash=bp(0)||bp(1); // A or B to dash
   const edge=i=>bp(i)&&!GP.lastB[i];
+  if(edge(3)&&G.state==='play')G.ultLatch=true; // Y: ULTIMATE release
   if(edge(9)&&(G.state==='play'||G.state==='pause'))togglePause(); // start
   if(G.state==='levelup'){
     if(edge(14))gpFocusSet(GP.focus-1);
@@ -3265,6 +3379,8 @@ Object.assign(ZH,{
   'Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).':'击杀敌人，捡起宝石，每次升级三选一。按 R 重抽（每局 2 次）。',
   '💨 Dash through danger':'💨 冲刺穿越危险',
   'Dashing grants brief invincibility. Use it to pass through crowds and bullets.':'冲刺期间短暂无敌。用它穿过人群和弹幕。',
+  '⚡ Charge your ULTIMATE':'⚡ 蓄力你的终极',
+  'Thwacking the horde fills the ⚡ meter. At full, press Q (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.':'拍飞敌群会蓄满 ⚡ 槽。蓄满后按 Q（手柄 Y，或 ⚡ 按钮）释放清屏冲击波。',
   '🧬 Evolve your weapons':'🧬 进化你的武器',
   'Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.':'武器升到 5 级，搭配的被动达到 2 级以上，然后开任意宝箱。精英和头目会掉宝箱。',
   '🪙 Gold is forever':'🪙 金币是永久的',
@@ -3276,7 +3392,7 @@ function applyLangHtml(){
   if(LANG!=='zh')return;
   const set=(id,txt)=>{const el=$(id);if(el)el.textContent=txt;};
   ['bPlay','bDaily','bChal','bShop','bTrophies','bAlmanac','bSettings','bResume','bQuit','bRetry','bBack6',
-   'bMenu1','bMenu2','bGoOn','bShare1','bShare2','bChestOk','bFull','modalOk','modalCancel',
+   'bMenu1','bMenu2','bGoOn','bShare1','bShare2','bSnap1','bSnap2','bChestOk','bFull','modalOk','modalCancel',
    'sExport','sImport','bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
     const el=$(id);if(el)el.textContent=T(el.textContent.trim());});
   document.querySelectorAll('.setrow .sl').forEach(el=>{el.textContent=T(el.textContent.trim());});
@@ -3288,7 +3404,7 @@ function applyLangHtml(){
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
   if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.6 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[1])smalls[1].textContent='v2.7 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))

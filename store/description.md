@@ -40,6 +40,9 @@ Beat her and the lawn is yours. Keep playing, and at 15:00 the audit begins.
 - **16 achievements**, a discovery almanac, level-up rerolls, and the
   permanent **LAWN SHOP** — bank gold into damage, HP, speed, greed, a
   Second Wind revive, and a Head Start that begins runs with free picks
+- Chain thwacks into **COMBO** milestones, charge a screen-clearing **ULTIMATE**,
+  then watch KAREN get **EVICTED** in a yard full of loot — and hit **📸 SAVE IMAGE**
+  to share the run
 - **Full controller support** and Steam Deck-friendly out of the box
 - Original synthesized soundtrack, zero asset packs, 100% legally distinct
 

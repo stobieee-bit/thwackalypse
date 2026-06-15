@@ -1,7 +1,7 @@
 {
   "name": "thwackalypse64",
   "productName": "THWACKALYPSE 64",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "A 100% legally distinct low-poly bullet heaven. Defend your lawn.",
   "main": "main.js",
   "private": true,
