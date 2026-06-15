@@ -140,6 +140,13 @@
   .upcard .tagP{position:absolute;top:8px;left:10px;font-size:10px;font-weight:800;color:#6fd3ff;letter-spacing:1px;}
   .upcard .new{position:absolute;top:6px;right:8px;background:var(--pink);color:#fff;font-size:10px;font-weight:800;
     border-radius:6px;padding:2px 6px;transform:rotate(6deg);}
+  .upcard .cardbtn{position:absolute;bottom:6px;width:24px;height:24px;border-radius:7px;border:0;padding:0;
+    font-size:12px;line-height:1;cursor:pointer;pointer-events:auto;opacity:.85;}
+  .upcard .cardbtn:hover{opacity:1;transform:scale(1.12);}
+  .upcard .banx{right:8px;background:#5a2330;color:#ffd6d6;}
+  .upcard .lockb{left:10px;background:#2a3a2a;color:#cfe8c0;}
+  .upcard .lockb.on{background:var(--gold);color:#000;}
+  .upcard.cardlocked{box-shadow:0 0 0 3px var(--gold) inset,0 0 18px rgba(255,210,62,.5);}
   h2.bigword{font-family:Impact,"Arial Black",sans-serif;font-size:54px;margin:0 0 6px;color:var(--gold);
     text-shadow:0 4px 0 #6b4d00,0 8px 16px #000;letter-spacing:2px;animation:pop .35s ease-out;}
   @keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
@@ -310,7 +317,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.8 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.9 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -333,6 +340,7 @@
   <div style="color:#9ab59a;font-size:13px">pick one — the lawn depends on it</div>
   <div class="cards" id="cards"></div>
   <button class="btn alt" id="bReroll" style="font-size:17px;padding:9px 26px"></button>
+  <div id="banLock" class="small" style="font-size:12px;margin-top:4px"></div>
 </div>
 
 <div id="scrChest" class="screen hide">
@@ -703,6 +711,8 @@ addEventListener('keydown',e=>{
     if(k==='arrowright'||k==='d')gpFocusSet(GP.focus+1);
     if(k==='enter'||k===' '){const cs=lvCards();if(cs[GP.focus])cs[GP.focus].click();}
     if(k==='r')$('bReroll').click();
+    if(k==='x'){const c=lvCards()[GP.focus];if(c&&c._pick)doBanish(c._pick);} // banish focused
+    if(k==='c'){const c=lvCards()[GP.focus];if(c&&c._pick)doLock(c._pick);}   // lock focused
   }else if(G.state==='chest'&&(k==='enter'||k===' '))$('bChestOk').click();
 });
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
@@ -1208,6 +1218,7 @@ function newRun(charId){
     dmgTakenRun:0,unt300:false,bossesRun:[],inspectorT:900,inspectorMult:1,
     revived:false,combo:0,comboT:0,
     karenSpawned:false,karenT:0,karenDeadT:0,rerolls:2,
+    banishes:2,lockCharges:1,banished:new Set(),lockedPick:null,
     daily:pendingDaily,challenge:pendingChallenge,
     mowplus:!!(!pendingDaily&&!pendingChallenge&&SAVE.mowplus&&SAVE.mowWins[SAVE.lastMap])});
   setPlayerModel(charId);
@@ -1480,23 +1491,57 @@ function buildPool(){
   }
   return live;
 }
+const pickKey=p=>p.kind+':'+(p.id||p.stat||p.wid||'');
 function openLevelUp(){
   G.state='levelup';AU.level();
   const pool=buildPool();const picks=[];
+  if(G.lockedPick){ // LOCK: the held option is guaranteed to return
+    picks.push(G.lockedPick);
+    const k=pickKey(G.lockedPick);
+    for(let i=pool.length-1;i>=0;i--)if(pickKey(pool[i])===k)pool.splice(i,1);
+  }
   while(picks.length<3&&pool.length){const i=Math.floor(RNG()*pool.length);picks.push(pool.splice(i,1)[0]);} // seeded: daily-run offers must be reproducible
   if(!picks.length)picks.push({kind:'heal'});
   const cd=$('cards');cd.innerHTML='';
-  for(const p of picks)cd.appendChild(makeCard(p,()=>{applyChoice(p);closeLevelUp();}));
+  for(const p of picks)cd.appendChild(makeCard(p,()=>{applyChoice(p);closeLevelUp();},true));
   const rb=$('bReroll');
   rb.textContent=`${T('🎲 REROLL')} (${G.rerolls} ${T('left')})`;
   rb.disabled=G.rerolls<=0;rb.style.opacity=G.rerolls>0?1:.45;
+  markLocked();updateBanLock();
   show('scrLevel');
   GP.focus=0;gpFocusSet(0);
 }
+function markLocked(){ // highlight the locked card without reshuffling
+  document.querySelectorAll('#cards .upcard').forEach(c=>{
+    const on=G.lockedPick&&c.dataset.pk===pickKey(G.lockedPick);
+    c.classList.toggle('cardlocked',!!on);
+    const lb=c.querySelector('.lockb');if(lb)lb.classList.toggle('on',!!on);
+  });
+}
+function updateBanLock(){
+  const el=$('banLock');if(!el)return;
+  el.innerHTML=G.daily?'':`✖ ${T('BANISH')} (${G.banishes})  &nbsp;·&nbsp;  🔒 ${T('LOCK')} (${G.lockCharges})`;
+}
+function doBanish(p){
+  if(G.daily||G.state!=='levelup'||G.banishes<=0||!(p.kind==='w'||p.kind==='p'))return;
+  G.banishes--;G.banished.add(pickKey(p));
+  if(G.lockedPick&&pickKey(G.lockedPick)===pickKey(p)){G.lockedPick=null;G.lockCharges++;}
+  AU.hit();openLevelUp(); // refill from the filtered pool (consumes seeded RNG, like reroll)
+}
+function doLock(p){
+  if(G.daily||G.state!=='levelup'||!(p.kind==='w'||p.kind==='p'))return;
+  const k=pickKey(p),cur=G.lockedPick?pickKey(G.lockedPick):null;
+  if(cur===k){G.lockedPick=null;G.lockCharges++;}        // untoggle → refund
+  else if(G.lockedPick){G.lockedPick={...p};}            // move the lock (no extra charge)
+  else if(G.lockCharges>0){G.lockCharges--;G.lockedPick={...p};}
+  else return;                                            // out of charges
+  AU.coin();markLocked();updateBanLock();                // no reshuffle
+}
 $('bReroll').onclick=()=>{if(G.rerolls>0&&G.state==='levelup'){G.rerolls--;openLevelUp();}};
 const OVER_META={dmg:['💪','Damage'],maxHp:['❤️','Max HP'],spd:['👟','Speed'],crit:['🎯','Crit'],greed:['🤑','Greed'],armor:['🧤','Armor'],regen:['🧴','Regen']};
-function makeCard(p,onClick){
+function makeCard(p,onClick,lvMode){
   const div=document.createElement('div');div.className='upcard';
+  div.dataset.pk=pickKey(p);
   if(p.kind==='heal'){
     div.innerHTML=`<div class="ic">🍔</div><div class="nm">${T('Emergency Burger')}</div><div class="lv">${T('consumable')}</div><div class="ds">${T('You\'ve maxed everything?! Fine. Heal 50 HP and +50 gold.')}</div>`;
   }else if(p.kind==='over'){
@@ -1521,6 +1566,13 @@ function makeCard(p,onClick){
       <div class="lv">${isNew?T('Level 1'):T('Level')+' '+(p.lvl-1)+' → <b>'+p.lvl+'</b>'} ${'●'.repeat(p.lvl)}${'○'.repeat(5-p.lvl)}</div>
       <div class="ds">${def.desc(p.lvl)}</div>${hint}`;
   }
+  if(lvMode&&!G.daily&&(p.kind==='w'||p.kind==='p')){ // BANISH + LOCK on real choices (off in seeded daily runs)
+    const bx=document.createElement('button');bx.className='cardbtn banx';bx.textContent='✖';bx.title=T('BANISH');
+    bx.onclick=e=>{e.stopPropagation();doBanish(p);};div.appendChild(bx);
+    const lk=document.createElement('button');lk.className='cardbtn lockb';lk.textContent='🔒';lk.title=T('LOCK');
+    lk.onclick=e=>{e.stopPropagation();doLock(p);};div.appendChild(lk);
+    div._pick=p; // for keyboard/gamepad banish/lock on the focused card
+  }
   div.onclick=onClick;return div;
 }
 function applyChoice(p){
@@ -1539,7 +1591,7 @@ function applyChoice(p){
   updateWrow();
 }
 function closeLevelUp(){
-  hideAll(['scrLevel']);P.pend--;
+  hideAll(['scrLevel']);P.pend--;G.lockedPick=null; // a pick was made — the held option is consumed
   if(P.pend>0)openLevelUp();
   else {G.state='play';relock();
     rings.push({x:P.x,y:P.y,r:8,max:120,life:.4,col:0x9fff4a});
@@ -3299,6 +3351,7 @@ function buildAlmanac(){
   h+=almRow('⚡',T('⚡ Charge your ULTIMATE').replace('⚡ ',''),T('Thwacking the horde fills the ⚡ meter. At full, press Q (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.'),false);
   h+=almRow('🧬',T('🧬 Evolve your weapons').replace('🧬 ',''),T('Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.'),false);
   h+=almRow('🪙',T('🪙 Gold is forever').replace('🪙 ',''),T('Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.'),false);
+  h+=almRow('🚫',T('🚫 Banish & 🔒 Lock your picks').replace('🚫 ',''),T('On a level-up, ✖ banishes an option for the rest of the run; 🔒 holds one through a reroll. Keyboard X/C, gamepad Y/B.'),false);
   h+=`<div class="almHead">${T('DEFENDERS')} <small>${T('each one dashes differently')}</small></div>`;
   for(const c of CHARS){
     const locked=charLocked(c);
@@ -3462,6 +3515,8 @@ function pollGamepad(){
     if(edge(15))gpFocusSet(GP.focus+1);
     if(edge(0)){const cs=lvCards();if(cs[GP.focus])cs[GP.focus].click();}
     if(edge(2))$('bReroll').click(); // X rerolls
+    if(edge(3)){const c=lvCards()[GP.focus];if(c&&c._pick)doBanish(c._pick);} // Y banishes
+    if(edge(1)){const c=lvCards()[GP.focus];if(c&&c._pick)doLock(c._pick);}   // B locks
   }else if(G.state==='chest'&&edge(0))$('bChestOk').click();
   else if(G.state==='dead'&&edge(0))$('bRetry').click();
   else if(G.state==='won'&&edge(0))$('bGoOn').click();
@@ -3505,6 +3560,10 @@ Object.assign(ZH,{
   'OVERFLOW':'溢出','stack':'层','Endless mastery — a permanent boost beyond max.':'无尽精通——突破上限的永久加成。',
   'Damage':'伤害','Max HP':'最大生命','Speed':'移速','Crit':'暴击','Greed':'贪婪','Armor':'护甲','Regen':'回血',
   'Bruiser':'猛攻','Tank':'坦克','Rapid-Fire':'速射','Glass Cannon':'玻璃大炮','Hybrid':'全能',
+  // v2.9 banish/lock
+  'BANISH':'放逐','LOCK':'锁定',
+  '🚫 Banish & 🔒 Lock your picks':'🚫 放逐 与 🔒 锁定 你的选项',
+  'On a level-up, ✖ banishes an option for the rest of the run; 🔒 holds one through a reroll. Keyboard X/C, gamepad Y/B.':'升级时，✖ 可在本局永久放逐一个选项；🔒 可在重抽时保留一个。键盘 X/C，手柄 Y/B。',
 });
 function applyLangHtml(){
   if(LANG!=='zh')return;
@@ -3522,7 +3581,7 @@ function applyLangHtml(){
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
   if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.8 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[1])smalls[1].textContent='v2.9 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))
