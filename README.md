@@ -8,24 +8,29 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 
 ## Features
 
-- 7 playable defenders (2 unlockable), each with a **signature dash**: Gerald's burning grill trail, Babushka's shoulder check, DJ Gobbo's bass-drop landing, Briney's slowing brine wake, Moth Lad's extended flutter, MOWBOT's mowing charge, and Trash Panda's mid-dash pickpocketing
-- 10 weapons × 5 levels, each with a **unique evolution** (BRUNCHNADO, MURDER HORNETS, DROP THE SUN, CATEGORY 5, GNOME LEGION…) — including deployable golden gnome turrets and a knockback leaf blower
-- **MOW+ hard mode** per map (win it once to unlock), kill-combo counter, **Second Wind** revive in the shop, per-character best times
-- 8 passives, 8 enemy types, 3 staged bosses, horde events, elite chests
-- **KAREN, FINAL FORM** — the true final boss at 12:00: three phases, complaint barrages, HOA summons, manager-voice screams, and she teleports if you try to walk away. Victory means evicting her.
-- 4 maps with unlocks: Front Lawn, Midnight Mow, Gnome-in-One, and PERPETUAL CARE (a restless cemetery)
-- Cinematic boss intro cards, level-up rerolls (2 per run)
-- **📅 Daily Run** — date-seeded so everyone fights the same waves; chase your best thwack count and share it
-- **📖 The Almanac** — how-to-play guide plus a discovery codex: weapons, evolutions, residents, and management stay "???" until you meet them
-- Daily streaks 🔥, Head Start shop tier (begin runs with free picks), fullscreen on mobile, LAWN LEGEND crown at 100% trophies
-- Save export/import codes, reduced-motion friendly defaults, crash toast for easy bug reports
-- 16 achievements with a trophies gallery, permanent meta shop, persistent saves
-- **THE GAUNTLET** — three challenge modes (GLASS LAWN at 1 HP, ONE WEAPON WONDER, GNOME RUSH), and at 100% trophies **KAREN herself becomes playable**, teleport dash included
-- **THE INSPECTOR** — an endless-mode capstone boss who arrives at 15:00, teleports when outrun, and respawns stronger
-- **Installable PWA** — add it to your home screen; plays fully offline after first load
+**Your weapons fight for you** — you just move, dash, and make build choices.
+**Survive to 12:00** and management arrives in person: **KAREN, FINAL FORM**.
+**Beat her** and the lawn is yours; keep going and at 15:00 the audit begins.
+
+### Defenders & weapons
+- **8 defenders**, each with a **signature dash** — burning grill trail, shoulder check, bass-drop landing, slowing brine wake, extended flutter, mowing charge, mid-dash pickpocketing… and earn every trophy to make **KAREN herself playable** (teleport dash included)
+- **10 weapons × 5 levels**, each with a **unique evolution** — BRUNCHNADO, MURDER HORNETS, DROP THE SUN, CATEGORY 5, GNOME LEGION — plus golden gnome turrets and a knockback leaf blower
+- **8 passives** and chest-driven evolutions: max a weapon, hold its paired passive, open a chest
+- Level-up **rerolls**, a **Second Wind** revive, and per-character best times
+
+### Bosses & modes
+- **KAREN, FINAL FORM** at 12:00 — three phases, complaint barrages, HOA summons, manager-voice screams, teleports if you walk away
+- **5 bosses** total, plus **THE INSPECTOR**: an endless-mode audit that returns at 15:00, teleports when outrun, and respawns stronger
+- **4 maps**, each with a **MOW+** hard mode unlocked by winning it — including PERPETUAL CARE, a restless cemetery
+- **THE GAUNTLET** — three challenge modes: GLASS LAWN (1 HP), ONE WEAPON WONDER, GNOME RUSH
+- **📅 Daily Run** — date-seeded so everyone fights the same waves; chase the thwack record and keep your streak
+- **16 achievements**, a discovery **Almanac**, a permanent meta **LAWN SHOP**, and a LAWN LEGEND crown at 100%
+
+### Tech & platforms
+- **One self-contained `index.html`, no build step** — installable PWA, plays fully offline after first load, no accounts, no ads
 - **Full 360° third-person camera** — mouse-look (click to capture), drag, scroll zoom, right-stick, or right-thumb
-- Keyboard, mouse, **gamepad**, and **touch** controls
-- Fully synthesized soundtrack & SFX (WebAudio — zero audio files)
+- Keyboard, mouse, **gamepad**, and **touch** — plus a desktop/Steam shell (`steam/`)
+- Fully synthesized soundtrack & SFX (WebAudio — zero audio files), reduced-motion-friendly defaults, zh-CN localization
 - Authentic N64-era rendering: 270p internal resolution, bilinear blur, fog, gradient skydome, drifting low-poly clouds, flat-shaded vertex-colored models
 
 ## Controls

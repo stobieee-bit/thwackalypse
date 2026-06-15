@@ -268,8 +268,8 @@
 
 <div id="scrMenu" class="screen">
   <h1 class="logo">THWACK-<br>ALYPSE <span class="n64">64</span></h1>
-  <div class="tag">a 100% legally distinct bullet heaven — now in glorious low-poly 3D 🦩</div>
-  <div class="small">Any resemblance to other bonk-adjacent video games is purely coincidental and, frankly, hurtful to suggest. We have a pickle. In 3D.</div>
+  <div class="tag">Survivors-like bullet heaven — defend your lawn from the HOA 🦩</div>
+  <div class="small">Your weapons fight for you — you just move, dash, and build. Any resemblance to other bonk-adjacent games is purely coincidental and, frankly, hurtful to suggest. We have a pickle. In 3D.</div>
   <div style="margin-top:18px">
     <button class="btn" id="bPlay">PLAY</button>
     <button class="btn gold" id="bDaily">📅 DAILY RUN</button>
@@ -286,7 +286,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>P</kbd> pause &nbsp;·&nbsp; <kbd>M</kbd> mute &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.4 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.5 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -390,6 +390,7 @@
   <div><button class="btn" id="bRetry">ONE MORE LAWN</button>
   <button class="btn alt" id="bShare1">📋 SHARE</button>
   <button class="btn alt" id="bMenu1">MENU</button></div>
+  <a id="bWish2" class="btn sm hide" style="display:inline-block;margin-top:6px;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
 </div>
 
 <div id="scrWin" class="screen hide">
@@ -398,6 +399,7 @@
   <div><button class="btn" id="bGoOn">KEEP MOWING (endless)</button>
   <button class="btn alt" id="bShare2">📋 SHARE</button>
   <button class="btn alt" id="bMenu2">MENU</button></div>
+  <a id="bWish3" class="btn sm hide" style="display:inline-block;margin-top:6px;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
 </div>
 
 <script src="three.min.js"></script>
@@ -469,7 +471,7 @@ const ZH={
   'YOU GOT THWACKED':'你被拍飞了','LAWN DEFENDED!':'草坪保卫成功！','🎁 CHEST!':'🎁 宝箱！',
   'THE ALMANAC':'年鉴','EXPORT':'导出','IMPORT':'导入','MUTE: OFF':'静音：关','MUTE: ON':'静音：开',
   'pick one — the lawn depends on it':'选一个——草坪就靠它了',
-  'a 100% legally distinct bullet heaven — now in glorious low-poly 3D 🦩':'一款 100% 法律意义上完全不同的弹幕天堂——华丽低多边形 3D 🦩',
+  'Survivors-like bullet heaven — defend your lawn from the HOA 🦩':'生存类弹幕天堂——保卫你的草坪，对抗业委会 🦩',
   'DASH [SPACE]':'冲刺 [空格]',
   // settings labels
   '🎵 Music':'🎵 音乐','🔊 Sound FX':'🔊 音效','📳 Screen shake':'📳 屏幕震动','📺 CRT filter':'📺 CRT 滤镜',
@@ -2991,7 +2993,9 @@ $('bChal').onclick=()=>{hideAll(['scrMenu']);buildChal();show('scrChal');G.state
 $('bBack6').onclick=()=>{hideAll(['scrChal']);refreshMenu();show('scrMenu');G.state='menu';};
 wireShare('bShare1');wireShare('bShare2');
 const STEAM_URL=''; // set to the Steam store URL once the Coming Soon page is live
-if(STEAM_URL&&!NATIVE){$('bWish').href=STEAM_URL;$('bWish').classList.remove('hide');}
+if(STEAM_URL&&!NATIVE){ // light up the wishlist CTA on the menu AND both peak-emotion end screens
+  for(const id of ['bWish','bWish2','bWish3']){const el=$(id);if(el){el.href=STEAM_URL;el.classList.remove('hide');}}
+}
 if(matchMedia&&matchMedia('(pointer:coarse)').matches)$('bFull').style.display='inline-block';
 $('bFull').onclick=()=>{try{
   if(document.fullscreenElement)document.exitFullscreen();
@@ -3236,8 +3240,8 @@ function applyLangHtml(){
   const tag=document.querySelector('#scrMenu .tag');
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
-  if(smalls[0])smalls[0].textContent='与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.4 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
+  if(smalls[1])smalls[1].textContent='v2.5 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))
