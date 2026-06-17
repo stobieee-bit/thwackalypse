@@ -3,14 +3,20 @@
 The repo ships Steam-ready: web build (`index.html`) + desktop shell (`steam/`).
 This file is the runbook from here to "Launch" button.
 
+## 0. App identity (APPROVED ✅)
+- **App ID: `4866690`** (Steamworks > App Admin > "Thwackalypse (4866690)").
+- Store item ID: `1224518`.
+- Packages: Developer Comp `1690160`, Beta Testing `1690161`, retail Thwackalypse `1690162`.
+- Public store URL (once Coming Soon is live): `https://store.steampowered.com/app/4866690/Thwackalypse/`.
+- Publisher: Tyler Stobie (auto-grant comp package for dev play).
+
 ## 1. Steamworks onboarding (human steps)
-- [ ] Create a Steamworks partner account (partner.steamgames.com), pay the
+- [x] Create a Steamworks partner account (partner.steamgames.com), pay the
       $100 app fee (recouped after $1,000 adjusted gross), complete
-      identity/tax/banking. Allow a few business days.
-- [ ] Create the app, note the **App ID**.
-- [ ] Replace `480` in `steam/steam_appid.txt` with the real App ID
-      (480 is Valve's public Spacewar test app — achievements/cloud calls
-      no-op against it but the shell boots fine).
+      identity/tax/banking.
+- [x] Create the app — **App ID 4866690**.
+- [x] Replace `480` in `steam/steam_appid.txt` with the real App ID — **done, now `4866690`**.
+      (480 was Valve's public Spacewar test placeholder.)
       Packaged builds copy `steam_appid.txt` next to the .exe (electron-builder
       `extraFiles`) so local/dev builds can talk to Steam without a launch
       through the client. Builds uploaded through Steam don't need the file —
@@ -97,9 +103,13 @@ Until then the daily keeps its local-best + share-code behavior everywhere.
 - Keep comparative jokes out of store assets; in-game humor is fine.
 
 ## 9. Go-to-market
-- [ ] Put the page up as **Coming Soon** immediately — wishlists gate everything.
-- [ ] Set `STEAM_URL` in index.html → the web version (your funnel, the
-      "demo") shows a 💚 WISHLIST ON STEAM button on the menu.
+- [ ] Put the page up as **Coming Soon** immediately — wishlists gate everything,
+      and earliest release is 2 weeks after the page is publicly visible.
+- [ ] **The moment the Coming Soon page is public**, uncomment the staged
+      `STEAM_URL='https://store.steampowered.com/app/4866690/Thwackalypse/'` in
+      index.html (it's blank today so the button stays hidden — no 404). That
+      lights up the 💚 WISHLIST ON STEAM CTA on the **menu AND both end screens**
+      (peak-emotion placement). Then bump the version + redeploy Pages.
 - [ ] Enter **Steam Next Fest** with a demo build (the web build *is* the demo).
 - [ ] Clip-first marketing: Karen voice lines, GNOME LEGION, EVIDENCE DELETED.
 - [ ] Launch at $2.99–4.99 with a 10–15% launch discount once wishlists are

@@ -3304,7 +3304,10 @@ $('bChal').onclick=()=>{hideAll(['scrMenu']);buildChal();show('scrChal');G.state
 $('bBack6').onclick=()=>{hideAll(['scrChal']);refreshMenu();show('scrMenu');G.state='menu';};
 wireShare('bShare1');wireShare('bShare2');
 $('bSnap1').onclick=()=>captureRun('bSnap1');$('bSnap2').onclick=()=>captureRun('bSnap2');
-const STEAM_URL=''; // set to the Steam store URL once the Coming Soon page is live
+// App ID 4866690. Flip this to the line below once the Coming Soon page is APPROVED & public,
+// then the 💚 WISHLIST CTA lights up on the menu + both end screens:
+//   const STEAM_URL='https://store.steampowered.com/app/4866690/Thwackalypse/';
+const STEAM_URL=''; // store page not yet public — keep blank so the button stays hidden (no 404)
 if(STEAM_URL&&!NATIVE){ // light up the wishlist CTA on the menu AND both peak-emotion end screens
   for(const id of ['bWish','bWish2','bWish3']){const el=$(id);if(el){el.href=STEAM_URL;el.classList.remove('hide');}}
 }
