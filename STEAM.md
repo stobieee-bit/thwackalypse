@@ -90,12 +90,24 @@ Until then the daily keeps its local-best + share-code behavior everywhere.
   (5) Gnome-in-One + GENTRIFITRON boss. Upload these as the gallery.
 - Capsules: **code-built (original, on-brand) art is in `store/cap_*.png`** — the
   concept from the brief (Karen, phone raised, looming over a terrified gnome on a
-  perfect lawn; logo) rendered at every required size:
-  `cap_main_616x353`, `cap_vertical_374x448`, `cap_header_460x215`, `cap_920x430`,
-  `cap_1232x706`, `cap_hero_3840x1240`, `cap_library_600x900`.
-  These are flat-vector key art in the game's palette — fully usable to launch
-  Coming Soon. Swap in commissioned/painted art later if you want more polish;
-  the sizes and composition are already proven.
+  perfect lawn; logo) rendered for every Steamworks asset slot:
+
+  | Steamworks slot       | Size       | File                            |
+  |-----------------------|------------|---------------------------------|
+  | Small Capsule         | 462×174    | `cap_small_462x174.png`         |
+  | Main Capsule          | 616×353    | `cap_main_616x353.png`          |
+  | Vertical Capsule      | 748×896    | `cap_vertical_748x896.png`      |
+  | Header Capsule        | 460×215    | `cap_header_460x215.png`        |
+  | Page Background       | 1232×706   | `cap_1232x706.png`              |
+  | Library Header        | 920×430    | `cap_920x430.png`               |
+  | Library Capsule       | 600×900    | `cap_library_600x900.png`       |
+  | Library Hero          | 3840×1240  | `cap_hero_3840x1240.png`        |
+  | Library Logo (transp.)| 1280×720   | `cap_library_logo_1280x720.png` |
+  | (legacy half-size vert)| 374×448   | `cap_vertical_374x448.png`      |
+
+  Flat-vector key art in the game's palette — fully usable to launch Coming Soon.
+  Swap in commissioned/painted art later if you want more polish; every required
+  size + composition is already proven.
 - Trailer (required): capture 60–90s with OBS or:
   `ffmpeg -f gdigrab -framerate 60 -i desktop -t 75 -vf scale=1920:1080 trailer.mp4`
   Suggested beat sheet: 0-10s horde chaos → 10-25s evolution montage →
