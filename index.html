@@ -317,7 +317,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.9 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.10 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -1287,7 +1287,7 @@ function killEnemy(e){
   e.dead=true;G.kills++;
   G.combo++;G.comboT=1.2;
   G.comboMax=Math.max(G.comboMax,G.combo);G.comboPunch=1; // HUD pop
-  if(!e.boss)G.ult=Math.min(1,G.ult+(e.elite?0.06:0.018)); // charge ULTIMATE off the horde, not bosses
+  if(!e.boss)G.ult=Math.min(1,G.ult+(e.elite?0.035:0.011)); // charge ULTIMATE off the horde, not bosses (tuned for ~once/35-40s, a climactic moment not a spam button)
   if([15,30,50,100,200,400].includes(G.combo)){
     popText(P.x,P.y,T('COMBO x')+G.combo,'#6fd3ff',19+Math.min(10,G.combo/20),74);
     AU.tone(500+G.combo*2,800+G.combo*2,.12,'square',.12);}
@@ -3584,7 +3584,7 @@ function applyLangHtml(){
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
   if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.9 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[1])smalls[1].textContent='v2.10 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))
