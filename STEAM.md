@@ -84,10 +84,18 @@ Until then the daily keeps its local-best + share-code behavior everywhere.
 
 ## 7. Store page
 - Copy: `store/description.md` (no comparative naming on the page).
-- Screenshots: `store/shot1.jpg` … `shot5.jpg` (1920×1080, staged from the engine).
-- Capsules: commission or generate — concept: Karen, phone raised, looming over
-  a terrified gnome on a perfect lawn; logo top-left. Required sizes:
-  616×353, 374×448, 460×215, 920×430, 1232×706, plus 3840×1240 hero if featured.
+- Screenshots: `store/shot1.jpg` … `shot5.jpg` — **re-staged from the live engine at
+  1920×1080**: (1) bullet-heaven horde + COMBO HUD, (2) KAREN, FINAL FORM with phone
+  raised, (3) the ULTIMATE gold shockwave, (4) Midnight Mow night atmosphere,
+  (5) Gnome-in-One + GENTRIFITRON boss. Upload these as the gallery.
+- Capsules: **code-built (original, on-brand) art is in `store/cap_*.png`** — the
+  concept from the brief (Karen, phone raised, looming over a terrified gnome on a
+  perfect lawn; logo) rendered at every required size:
+  `cap_main_616x353`, `cap_vertical_374x448`, `cap_header_460x215`, `cap_920x430`,
+  `cap_1232x706`, `cap_hero_3840x1240`, `cap_library_600x900`.
+  These are flat-vector key art in the game's palette — fully usable to launch
+  Coming Soon. Swap in commissioned/painted art later if you want more polish;
+  the sizes and composition are already proven.
 - Trailer (required): capture 60–90s with OBS or:
   `ffmpeg -f gdigrab -framerate 60 -i desktop -t 75 -vf scale=1920:1080 trailer.mp4`
   Suggested beat sheet: 0-10s horde chaos → 10-25s evolution montage →
