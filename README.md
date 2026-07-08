@@ -44,6 +44,7 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 | ULTIMATE (when charged) | Q / E | Y | ⚡ button |
 | Banish / Lock (level-up) | X / C | Y / B | on-card buttons |
 | Pause | P / Esc | Start | ⏸ button |
+| Menus | mouse / keyboard | d-pad + A/B (full navigation) | tap |
 | Mute | M | — | settings |
 
 ## Tech

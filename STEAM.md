@@ -88,17 +88,19 @@ No code changes required. Sanity-check the path once by running the packaged
 build and confirming where save.json lands before enabling Auto-Cloud.
 
 ## 5. Steam Deck / controller
-- In-run gamepad controls are complete: left stick move, right stick camera,
-  A/B dash, **Y ULTIMATE (in run)**, Start pause; level-up screen: d-pad
-  navigate, A pick, X reroll, **Y banish, B lock**; chest/death/win confirm on A.
-- **Menus (character select, shop, settings, almanac, trophies) are
-  mouse/touch-only** — on Deck they work via the touchscreen or a
-  trackpad-as-mouse controller config. Check **Partial Controller Support**
-  on the store page (not Full) until menu navigation is added.
+- In-run: left stick move, right stick camera, A/B dash, **Y ULTIMATE**,
+  Start pause; level-up screen: d-pad navigate, A pick, X reroll, **Y banish,
+  B lock**; chest confirm on A.
+- **Every menu is gamepad-navigable** (v2.12): d-pad moves a gold focus ring,
+  **A selects, B backs out**, left/right adjusts the volume/camera sliders,
+  d-pad scrolls the trophies/almanac lists, and confirm dialogs answer with
+  A/B. Check **Full Controller Support** on the store page.
+- One caveat: typing a save-import code needs a keyboard (Deck's on-screen
+  keyboard via Steam+X works).
 - Resolution: verified at 1280×800.
 - Emoji glyphs: bundled `twemoji.ttf` covers SteamOS (no system color emoji).
-- Deck review: expect "Playable" (touchscreen/trackpad needed for menus)
-  rather than "Verified" until menus are gamepad-navigable.
+- Deck review: this profile is "Verified"-shaped again — no mouse-required
+  input, no launcher, legible text at 800p.
 
 ## 6. Leaderboards (Daily Run) — optional, recommended
 steamworks.js does not currently expose Steam leaderboards. Two options:

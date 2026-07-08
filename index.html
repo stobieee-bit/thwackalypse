@@ -221,6 +221,7 @@
   @keyframes tout{0%{opacity:1}100%{opacity:0;transform:translateY(20px)}}
   .upcard.evoCard{border-color:var(--gold);box-shadow:0 0 26px rgba(255,210,62,.5);}
   .upcard.gpfocus{border-color:var(--gold);transform:translateY(-8px) scale(1.05);}
+  .gpnav{outline:3px solid var(--gold) !important;outline-offset:2px;border-radius:10px;}
   .evhint{margin-top:6px;font-size:10.5px;color:#8fb8d8;}
   .ctl{margin-top:14px;font-size:13px;color:#9ab59a;}
   #chestCard{margin:14px auto;}
@@ -316,7 +317,7 @@
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
   <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>Q</kbd> ⚡ ultimate &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.11 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.12 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -3508,6 +3509,47 @@ function gpFocusSet(i){const cs=lvCards();if(!cs.length)return;
   GP.focus=((i%cs.length)+cs.length)%cs.length;
   cs.forEach((c,j)=>c.classList.toggle('gpfocus',j===GP.focus));}
 let gpDt=1/60;
+/* ---- generic gamepad MENU navigation: d-pad focus, A select, B back ----
+   (levelup/chest keep their bespoke handling below; 'play' is untouched) */
+const GPNAV={idx:0,st:''};
+const GPNAV_SCR={menu:'scrMenu',select:'scrSelect',shop:'scrShop',settings:'scrSettings',
+  trophies:'scrTrophies',almanac:'scrAlmanac',challenges:'scrChal',pause:'scrPause',dead:'scrDead',won:'scrWin'};
+const GPNAV_BACK={select:'bBack1',shop:'bBack2',settings:'bBack3',trophies:'bBack4',almanac:'bBack5',
+  challenges:'bBack6',pause:'bResume',dead:'bMenu1',won:'bMenu2'};
+function gpNavRoot(){ // an open modal outranks the state screen (e.g. the quit confirm)
+  if(!$('scrModal').classList.contains('hide'))return 'scrModal';
+  return GPNAV_SCR[G.state]||null;
+}
+function gpNavEls(){
+  const id=gpNavRoot();if(!id)return[];
+  const root=$(id);if(root.classList.contains('hide'))return[];
+  let sel='button, a.btn, input[type=range]';
+  if(id!=='scrModal'){
+    if(G.state==='select')sel+=', .charcard, .mapcard';
+    if(G.state==='challenges')sel+=', .trow';
+  }
+  return [...root.querySelectorAll(sel)].filter(el=>el.offsetParent!==null&&!el.disabled);
+}
+function gpNavPaint(){
+  document.querySelectorAll('.gpnav').forEach(e=>e.classList.remove('gpnav'));
+  const els=gpNavEls(),el=els[GPNAV.idx];
+  if(el){el.classList.add('gpnav');try{el.scrollIntoView({block:'nearest'});}catch(e){}}
+}
+function gpNavMove(d){
+  const els=gpNavEls();if(!els.length)return;
+  GPNAV.idx=((GPNAV.idx+d)%els.length+els.length)%els.length;
+  gpNavPaint();
+}
+function gpNavClick(){const els=gpNavEls(),el=els[GPNAV.idx];if(el&&el.type!=='range')el.click();}
+function gpNavAdjust(d){ // left/right on a focused slider adjusts instead of moving
+  const els=gpNavEls(),el=els[GPNAV.idx];
+  if(el&&el.type==='range'){el.value=+el.value+d*5;el.dispatchEvent(new Event('input'));return true;}
+  return false;
+}
+function gpNavBack(){
+  if(!$('scrModal').classList.contains('hide')){$('modalCancel').click();return;}
+  const b=GPNAV_BACK[G.state];if(b)$(b).click();
+}
 function pollGamepad(){
   GP.x=0;GP.y=0;GP.dash=false;
   const gps=navigator.getGamepads?navigator.getGamepads():[];
@@ -3534,8 +3576,20 @@ function pollGamepad(){
     if(edge(3)){const c=lvCards()[GP.focus];if(c&&c._pick)doBanish(c._pick);} // Y banishes
     if(edge(1)){const c=lvCards()[GP.focus];if(c&&c._pick)doLock(c._pick);}   // B locks
   }else if(G.state==='chest'&&edge(0))$('bChestOk').click();
-  else if(G.state==='dead'&&edge(0))$('bRetry').click();
-  else if(G.state==='won'&&edge(0))$('bGoOn').click();
+  else if(gpNavRoot()){ // menus: d-pad focus, A select, B back, sliders adjust with left/right
+    const key=G.state+'|'+gpNavRoot();
+    if(GPNAV.st!==key){GPNAV.st=key;GPNAV.idx=0;gpNavPaint();}
+    const box={trophies:'trophyRows',almanac:'almRows'}[G.state];
+    if(box&&gpNavRoot()!=='scrModal'){ // long lists: d-pad up/down scrolls the rows
+      if(bp(12))$(box).scrollBy(0,-9);if(bp(13))$(box).scrollBy(0,9);
+    }else{
+      if(edge(12))gpNavMove(-1);if(edge(13))gpNavMove(1);
+    }
+    if(edge(14)){if(!gpNavAdjust(-1))gpNavMove(-1);}
+    if(edge(15)){if(!gpNavAdjust(1))gpNavMove(1);}
+    if(edge(0))gpNavClick();
+    if(edge(1))gpNavBack();
+  }
   GP.lastB=g.buttons.map(b=>b.pressed);
 }
 /* ============================== MAIN LOOP ============================== */
@@ -3596,7 +3650,7 @@ function applyLangHtml(){
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
   if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.11 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[1])smalls[1].textContent='v2.12 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))

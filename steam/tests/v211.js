@@ -3,7 +3,7 @@
   const ok = (name, cond, extra) => out.push([name, !!cond].concat(extra !== undefined ? [extra] : []));
   try { localStorage.clear(); } catch (e) {}
 
-  ok('boot v2.11', document.querySelectorAll('#scrMenu .small')[1].textContent.startsWith('v2.11'));
+  ok('boot has version footer', /^v2\.\d+/.test(document.querySelectorAll('#scrMenu .small')[1].textContent));
   ok('single twitter:card', document.querySelectorAll('meta[name="twitter:card"]').length === 1
     && document.querySelector('meta[name="twitter:card"]').content === 'summary_large_image');
   ok('meta desc genre-first', /survivors-like/i.test(document.querySelector('meta[name="description"]').content));
