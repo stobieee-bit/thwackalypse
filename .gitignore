@@ -4,3 +4,4 @@ steam/node_modules/
 steam/dist/
 steam/app/
 steam/smoke.result
+steam/harness.result.json

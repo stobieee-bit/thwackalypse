@@ -9,6 +9,10 @@ const path = require('path');
 const SMOKE = process.argv.includes('--smoke');
 const SAVE_PATH = () => path.join(app.getPath('userData'), 'save.json');
 
+/* Steam overlay (Shift+Tab, screenshots) must hook the GPU process — enable
+   BEFORE app ready or it never renders. No-ops harmlessly without Steam. */
+try { require('steamworks.js').electronEnableSteamOverlay(); } catch (e) { /* no Steam */ }
+
 /* ---- Steamworks (optional at runtime) ---- */
 let steam = null;
 function initSteam() {
@@ -45,7 +49,10 @@ ipcMain.on('save-write', (_e, data) => {
 ipcMain.on('ach', (_e, id) => {
   if (!steam) return;
   try {
-    steam.achievement.activate(String(id).toUpperCase());
+    // activate() returns false (does not throw) when the API name is missing
+    // from the dashboard — surface it or a typo'd id fails 100% silently.
+    const ok = steam.achievement.activate(String(id).toUpperCase());
+    if (!ok) console.error('[ach] activate failed — id not on the dashboard?', id);
   } catch (err) { console.error('[ach]', id, err); }
 });
 

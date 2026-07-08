@@ -1,0 +1,20 @@
+"AppBuild"
+{
+	"AppID" "4866690"
+	"Desc" "THWACKALYPSE 64 vX.Y — <edit per upload>"
+
+	// relative to this script's directory
+	"ContentRoot" "..\dist\win-unpacked\"
+	"BuildOutput" "..\dist\steampipe_output\"
+
+	// upload to the default branch; set live from the Steamworks Builds page
+	// (or change to "beta" to auto-publish to the Beta Testing package)
+	"SetLive" ""
+
+	"Depots"
+	{
+		// NOTE: verify the depot ID in Steamworks > SteamPipe > Depots.
+		// Valve auto-creates AppID+1 (4866691) as the first depot by convention.
+		"4866691" "depot_build_4866691.vdf"
+	}
+}

@@ -6,15 +6,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="description" content="THWACKALYPSE 64 — a 100% legally distinct low-poly bullet heaven. Defend your lawn from gnomes, pigeons, and the HOA.">
+<meta name="description" content="THWACKALYPSE 64 — a survivors-like bullet heaven where your weapons fight for you. Survive 12 minutes of gnomes, pigeons, and kamikaze roombas, then evict KAREN, FINAL FORM. Free, in your browser.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0c120c">
 <meta property="og:title" content="THWACKALYPSE 64 🩴">
-<meta property="og:description" content="A 100% legally distinct low-poly bullet heaven. Defend your lawn from gnomes, pigeons, and the HOA. Free, in your browser.">
+<meta property="og:description" content="A survivors-like bullet heaven where your weapons fight for you — move, dash, build, and evict KAREN, FINAL FORM. Free, in your browser.">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩴</text></svg>">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -315,9 +314,9 @@
   <div id="menuNext" style="margin-top:6px"></div>
   <a id="bWish" class="btn sm hide" style="display:inline-block;text-decoration:none;background:#66c0f4;box-shadow:0 5px 0 #2a6a96,0 9px 18px rgba(0,0,0,.5)" target="_blank" rel="noopener">💚 WISHLIST ON STEAM</a>
   <button class="btn alt" id="bFull" style="display:none;font-size:16px;padding:8px 22px;margin-top:8px">⛶ FULLSCREEN</button>
-  <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
+  <div class="ctl" id="ctlLine"><kbd>WASD</kbd> move &nbsp;·&nbsp; 🖱 look (click to capture) &nbsp;·&nbsp; <kbd>SPACE</kbd> dash &nbsp;·&nbsp; <kbd>Q</kbd> ⚡ ultimate &nbsp;·&nbsp; <b style="color:var(--lime)">weapons AUTO-FIRE</b> &nbsp;·&nbsp; 🎮 gamepad &nbsp;·&nbsp; 📱 touch</div>
   <div id="rotateHint">📱 rotate to landscape for the full lawn</div>
-  <div class="small" style="margin-top:10px;opacity:.7">v2.10 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
+  <div class="small" style="margin-top:10px;opacity:.7">v2.11 · installable &amp; works offline · all art, audio, characters &amp; code original · three.js r158 (MIT) · collect chests to evolve maxed weapons · at 12:00, KAREN arrives · survive past 15:00 and the audit begins</div>
 </div>
 
 <div id="scrSelect" class="screen hide">
@@ -411,6 +410,7 @@
   <h2 class="bigword">PAUSED</h2>
   <div id="pauseBuild" class="small" style="font-size:14px"></div>
   <button class="btn" id="bResume">RESUME</button>
+  <button class="btn alt" id="bRestart">RESTART RUN</button>
   <button class="btn alt" id="bSettings2">SETTINGS</button>
   <button class="btn alt" id="bMute">MUTE: OFF</button>
   <button class="btn alt" id="bQuit">ABANDON LAWN</button>
@@ -506,7 +506,9 @@ const ZH={
   'THE ALMANAC':'年鉴','EXPORT':'导出','IMPORT':'导入','MUTE: OFF':'静音：关','MUTE: ON':'静音：开',
   'pick one — the lawn depends on it':'选一个——草坪就靠它了',
   'Survivors-like bullet heaven — defend your lawn from the HOA 🦩':'生存类弹幕天堂——保卫你的草坪，对抗业委会 🦩',
-  'DASH [SPACE]':'冲刺 [空格]',
+  'DASH':'冲刺','RESTART RUN':'重新开始本局',
+  'This run will end. Your gold is banked.':'本局将会结束。你的金币已入账。',
+  '💚 WISHLIST ON STEAM':'💚 加入 Steam 愿望单',
   // settings labels
   '🎵 Music':'🎵 音乐','🔊 Sound FX':'🔊 音效','📳 Screen shake':'📳 屏幕震动','📺 CRT filter':'📺 CRT 滤镜',
   '🔢 Damage numbers':'🔢 伤害数字','🎥 Camera speed':'🎥 镜头速度','🖥 Sharpness':'🖥 清晰度',
@@ -527,7 +529,6 @@ const ZH={
   'DEFEND THE LAWN!':'保卫草坪！','they\'re coming for the grass':'他们冲着草来了',
   'WASD move · weapons AUTO-FIRE · just survive':'WASD 移动 · 武器自动开火 · 努力生存',
   'move with left thumb · weapons AUTO-FIRE':'左手拇指移动 · 武器自动开火',
-  'left thumb moves · right thumb looks':'左手拇指移动 · 右手拇指视角',
   '🔥 MOW+ — DEFEND THE LAWN!':'🔥 修剪+ ——保卫草坪！','ENDLESS MODE':'无尽模式',
   'how long can the lawn last?':'草坪还能撑多久？',
   'SECOND WIND!':'回光返照！','the lawn isn\'t done with you':'草坪和你还没完',
@@ -547,11 +548,10 @@ const ZH={
   'CITATION!!':'罚单！！','RENT\'S DUE':'该交房租了','FRIDGE MAGNET!':'冰箱贴！',
   'EVIDENCE DELETED. +250g':'证据已删除。+250金',
   'AUDIT PASSED. +500g':'审计通过。+500金','COMBO x':'连击 x',
-  'KAREN HAS LEFT THE LAWN':'卡伦离开了草坪',
   // end screens
   'Survived':'存活','Level':'等级','thwacked':'被拍飞','banked':'入账','Total damage':'总伤害',
   'You defeated':'你击败了','The lawn is finally quiet.':'草坪终于安静了。',
-  'You survived':'你存活了','Dash Signature':'冲刺绝技','BEST TODAY':'今日最佳','best':'最佳',
+  'Dash Signature':'冲刺绝技','BEST TODAY':'今日最佳','best':'最佳',
   // menu stats
   'banked2':'已存金币','⏱ best:':'⏱ 最佳：','📅 today:':'📅 今日：','-day streak':'天连击','👑 LAWN LEGEND':'👑 草坪传奇',
   // trophies / almanac
@@ -694,7 +694,8 @@ addEventListener('keydown',e=>{
   if(e.repeat)return; // OS key-repeat must not re-fire pause/mute/card-confirm
   if(kbCapture&&G.state==='settings'){
     e.preventDefault();
-    if(k!=='escape')SAVE.settings.keys[kbCapture]=k;
+    const RESERVED=['m','p','q','e','r','x','c','escape']; // hardcoded hotkeys: mute/pause/ult/reroll/banish/lock
+    if(!RESERVED.includes(k))SAVE.settings.keys[kbCapture]=k; // reserved -> slot unchanged
     kbCapture=null;persist();refreshKb();
     return;
   }
@@ -717,7 +718,8 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 addEventListener('pointerdown',()=>{AU.init();if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume();});
-addEventListener('blur',()=>{if(G.state==='play')togglePause();});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false; // keyup can be missed while unfocused — don't auto-walk on resume
+  if(G.state==='play')togglePause();});
 
 /* ---- 360° chase camera ---- */
 const CAM={yaw:0,pitch:.62,dist:300,relock:false};
@@ -810,8 +812,8 @@ function touchCopy(){ // menus speak thumb, not keyboard
   if(!document.body.classList.contains('touch'))return;
   const c=document.getElementById('ctlLine');
   if(c)c.innerHTML=LANG==='zh'
-    ?'👈 左手拇指移动 &nbsp;·&nbsp; 👉 右手拇指视角 &nbsp;·&nbsp; 💨 冲刺键 &nbsp;·&nbsp; ⏸ 暂停 &nbsp;·&nbsp; 武器自动开火'
-    :'👈 left thumb moves &nbsp;·&nbsp; 👉 right thumb looks &nbsp;·&nbsp; 💨 dash button &nbsp;·&nbsp; ⏸ pause &nbsp;·&nbsp; weapons fire themselves';
+    ?'👈 左手拇指移动 &nbsp;·&nbsp; 👉 右手拇指视角 &nbsp;·&nbsp; 💨 冲刺 &nbsp;·&nbsp; ⚡ 终极技 &nbsp;·&nbsp; ⏸ 暂停 &nbsp;·&nbsp; 武器自动开火'
+    :'👈 left thumb moves &nbsp;·&nbsp; 👉 right thumb looks &nbsp;·&nbsp; 💨 dash &nbsp;·&nbsp; ⚡ ultimate &nbsp;·&nbsp; ⏸ pause &nbsp;·&nbsp; weapons fire themselves';
 }
 touchCopy();
 addEventListener('touchstart',touchCopy,{once:true,passive:true});
@@ -1230,7 +1232,7 @@ function newRun(charId){
   banner(T(G.mowplus?'🔥 MOW+ — DEFEND THE LAWN!':'DEFEND THE LAWN!'),
     T(document.body.classList.contains('touch')?
     'move with left thumb · weapons AUTO-FIRE':'WASD move · weapons AUTO-FIRE · just survive'));
-  if(SAVE.stats.runs<=1&&!pendingDaily&&!pendingChallenge&&!G.challenge)showFirstRunCard();
+  if(!SAVE.seen.coach&&!pendingDaily&&!pendingChallenge&&!G.challenge)showFirstRunCard(); // seen-flag: a first DAILY run doesn't burn the tutorial
 }
 function recompute(){
   const c=P.char,u=SAVE.upg,ps=P.passives;
@@ -1285,12 +1287,14 @@ function hitEnemy(e,dmg,opts={}){
 }
 function killEnemy(e){
   e.dead=true;G.kills++;
-  G.combo++;G.comboT=1.2;
-  G.comboMax=Math.max(G.comboMax,G.combo);G.comboPunch=1; // HUD pop
-  if(!e.boss)G.ult=Math.min(1,G.ult+(e.elite?0.035:0.011)); // charge ULTIMATE off the horde, not bosses (tuned for ~once/35-40s, a climactic moment not a spam button)
-  if([15,30,50,100,200,400].includes(G.combo)){
-    popText(P.x,P.y,T('COMBO x')+G.combo,'#6fd3ff',19+Math.min(10,G.combo/20),74);
-    AU.tone(500+G.combo*2,800+G.combo*2,.12,'square',.12);}
+  if(!G.scriptKill){ // scripted clears (KAREN's entrance) must not pollute combo records or gift ULT charge
+    G.combo++;G.comboT=1.2;
+    G.comboMax=Math.max(G.comboMax,G.combo);G.comboPunch=1; // HUD pop
+    if(!e.boss)G.ult=Math.min(1,G.ult+(e.elite?0.035:0.011)); // charge ULTIMATE off the horde, not bosses (tuned for ~once/35-40s, a climactic moment not a spam button)
+    if([15,30,50,100,200,400].includes(G.combo)){
+      popText(P.x,P.y,T('COMBO x')+G.combo,'#6fd3ff',19+Math.min(10,G.combo/20),74);
+      AU.tone(500+G.combo*2,800+G.combo*2,.12,'square',.12);}
+  }
   if(G.kills===100)ach('kills100');if(G.kills===1000)ach('kills1000');
   spray(e.x,e.y,e.boss?40:e.elite?20:8,e.col,e.boss?340:200);
   spray(e.x,e.y,e.boss?20:4,'#fff',160);
@@ -1408,10 +1412,11 @@ function dailyLineHtml(){
   const best=(SAVE.daily&&SAVE.daily.date===todayStr())?SAVE.daily.score:0;
   return `<br>📅 ${T('DAILY')} ${todayStr()}: <b>${G.kills}</b> 💀 ${G.kills>=best?'— <b style="color:var(--gold)">'+T('BEST TODAY')+'</b>':'('+T('best')+' '+best+')'}`;
 }
+const shareUrl=()=>(NATIVE&&STEAM_URL)?STEAM_URL:'https://stobieee-bit.github.io/thwackalypse/'; // Steam build shares the store page once it exists
 function shareText(){
   const sc=runGrade(),gr=[[5000,'S'],[3200,'A'],[1800,'B'],[800,'C'],[-1,'D']].find(t=>sc>=t[0])[1];
   return `🩴 THWACKALYPSE 64${G.daily?' '+T('DAILY')+' '+todayStr():''} — ${T('GRADE')} ${gr} · ${T('survived')} ${fmtT(G.t)}, `+
-    `${G.kills.toLocaleString()} ${T('thwacked')}${G.comboMax>=15?', '+T('combo')+' x'+G.comboMax:''}${G.won?', '+T('KAREN evicted'):''} → https://stobieee-bit.github.io/thwackalypse/`;
+    `${G.kills.toLocaleString()} ${T('thwacked')}${G.comboMax>=15?', '+T('combo')+' x'+G.comboMax:''}${G.won?', '+T('KAREN evicted'):''} → ${shareUrl()}`;
 }
 function wireShare(btnId){
   const b=$(btnId);
@@ -1439,7 +1444,7 @@ function captureRun(btnId){
     g.fillStyle='#cfe8c0';g.font=`700 ${Math.round(fh*0.3)}px "Segoe UI",system-ui,sans-serif`;
     g.fillText(shareText().split(' → ')[0],W/2,H-fh*0.6);
     g.fillStyle='#9fff4a';g.font=`800 ${Math.round(fh*0.26)}px Impact,"Arial Black",sans-serif`;
-    g.fillText('🩴 stobieee-bit.github.io/thwackalypse',W/2,H-fh*0.24);
+    g.fillText('🩴 '+shareUrl().replace(/^https?:\/\//,''),W/2,H-fh*0.24);
     c.toBlob(blob=>{
       if(!blob){b.textContent=T('FAILED');setTimeout(()=>b.textContent=orig,1800);return;}
       try{
@@ -1831,7 +1836,8 @@ function bossIntro(name,sub,isKaren){
 function spawnKaren(){
   G.karenSpawned=true;G.karenT=G.t;
   // the lawn falls silent: convert the rabble into a parting gift of gems
-  for(const e of enemies)if(!e.boss&&!e.elite&&!e.dead)killEnemy(e);
+  G.scriptKill=true; // silent path: gems/gold/kills still drop, but no combo credit or free ULT charge
+  try{for(const e of enemies)if(!e.boss&&!e.elite&&!e.dead)killEnemy(e);}finally{G.scriptKill=false;}
   G.shake=14;
   const def=G.challenge==='rush'?{...KAREN,hp:KAREN.hp*.6}:KAREN;
   const b=spawnBoss(def);
@@ -1913,7 +1919,7 @@ function update(dt){
   if(P.moving){const L=Math.hypot(mx,my);
     P.faceX=mx/L;P.faceY=my/L;
     if(L>1){mx/=L;my/=L;}}
-  if(G.ultLatch){G.ultLatch=false;if(G.ult>=1&&G.state==='play')fireUlt();}
+  if(G.ultLatch){G.ultLatch=false;if(G.ult>=1&&G.state==='play'&&!G.dying)fireUlt();} // no wasting the meter on the death cam
   P.dashCd-=dt;P.iT-=dt;
   if(P.stats.regen>0)P.hp=Math.min(P.stats.maxHp,P.hp+P.stats.regen*dt);
   if(!G.unt300&&G.t>=300){G.unt300=true;if(G.dmgTakenRun===0)ach('untouched');}
@@ -2197,7 +2203,7 @@ function updateWrow(){
     d.style.opacity=.8;d.innerHTML=PASSIVES[id].icon+'<span>'+P.passives[id]+'</span>';w.appendChild(d);}
 }
 function banner(b1,b2=''){
-  const b=$('banner');b.classList.remove('show');void b.offsetWidth;
+  const b=$('banner');b.classList.remove('show','evict');void b.offsetWidth; // 'evict' styling belongs to flashEvict only
   b.querySelector('.b1').textContent=b1;b.querySelector('.b2').textContent=b2;
   b.classList.add('show');
 }
@@ -2214,13 +2220,13 @@ function flashEvict(karen){
 /* ULTIMATE: charged by thwacking the horde, released for a screen-clearing shockwave */
 function fireUlt(){
   if(!P||G.ult<1)return;
-  G.ult=0;
   rings.push({x:P.x,y:P.y,r:14,max:760,life:.5,col:0xffd23e});
   spray(P.x,P.y,80,'#ffd23e',520);spray(P.x,P.y,40,'#fff',420);
   G.shake=18;G.ts=.2;AU.boom();AU.win();
   if(SAVE.settings.shake){const w=$('whiteflash');w.style.opacity=.55;setTimeout(()=>{w.style.opacity=0;},150);}
   for(const e of enemies){if(e.dead)continue; // iterate directly — independent of the per-frame grid build
     const t=720+e.r;if(d2(P.x,P.y,e.x,e.y)<t*t)hitEnemy(e,700,{fx:P.x,fy:P.y,kb:520,src:'ult'});}
+  G.ult=0; // zeroed AFTER the clear: kills made BY the ult must not seed the next charge (killEnemy caps at 1 mid-loop)
   banner(T('🌪️ LAWN FORCE!'),T('the HOA never saw it coming'));
 }
 
@@ -3102,7 +3108,8 @@ function drawTexts(){
     octx.strokeStyle='#000';octx.lineWidth=1.5;octx.strokeRect(ux,uy,uw,9);
     octx.textAlign='center';octx.lineWidth=3;octx.strokeStyle='#000';
     octx.font='800 12px Impact,"Arial Black",sans-serif';
-    const lab=full?T('⚡ ULTIMATE READY'):T('⚡ ULTIMATE');
+    const lab=(full?T('⚡ ULTIMATE READY'):T('⚡ ULTIMATE'))
+      +(full&&!document.body.classList.contains('touch')?' [Q]':''); // key hint, DASH [SPACE] pattern
     octx.strokeText(lab,innerWidth/2,uy-3);
     octx.fillStyle=full?'#fff':'#9ab59a';octx.fillText(lab,innerWidth/2,uy-3);
   }
@@ -3129,11 +3136,12 @@ function toggleMute(){AU.muted=!AU.muted;$('bMute').textContent=T(AU.muted?'MUTE
 /* first-run coach card: shown once (runs<=1), gameplay continues live behind it */
 let coachTimer=null;
 function showFirstRunCard(){
+  markSeen('coach'); // shown once, ever
   const touch=document.body.classList.contains('touch'),zh=LANG==='zh';
   $('coachTitle').textContent=zh?'快速上手':'QUICK START';
   const lines=zh?[
     '🕹️ <b>武器会自动开火</b>——你只需移动。',
-    '💎 走过 gems 即可升级。',
+    '💎 走过宝石即可升级。',
     touch?'💨 点击冲刺键可获得短暂无敌。':'💨 按 <b>空格</b> 冲刺，短暂无敌。'
   ]:[
     '🕹️ <b>Your weapons fire themselves</b> — just MOVE.',
@@ -3176,7 +3184,7 @@ function refreshMenu(){
     else{
       next.style.display='block';
       const id=(cands.includes('rich')&&(SAVE.stats.totalGold||0)<1000)?'rich':cands[0];
-      const A=ACHS[id],target=(A.unlocks.split(': ')[1]||A.unlocks);
+      const A=ACHS[id],target=(A.unlocks.split(/[:：]\s*/)[1]||A.unlocks); // zh unlocks use a full-width colon
       if(id==='rich'){
         const g=SAVE.stats.totalGold||0,pct=Math.min(1,g/1000);
         next.innerHTML=`<div style="font-size:12px;color:#9ab59a">${T('NEXT:')} ${A.icon} <b>${A.name}</b> — ${T('bank 1,000 gold')} (${g}/1000) → ${T('unlocks')} ${target}</div>`+
@@ -3351,7 +3359,7 @@ function buildAlmanac(){
   h+=almRow('🕹️',T('🕹️ Survive 12 minutes').replace('🕹️ ',''),T('Move constantly. Weapons fire themselves. At 12:00, management arrives in person.'),false);
   h+=almRow('💎',T('💎 Gems are XP').replace('💎 ',''),T('Kill things, collect the gems they drop, pick 1 of 3 upgrades each level. R rerolls (2 per run).'),false);
   h+=almRow('💨',T('💨 Dash through danger').replace('💨 ',''),T('Dashing grants brief invincibility. Use it to pass through crowds and bullets.'),false);
-  h+=almRow('⚡',T('⚡ Charge your ULTIMATE').replace('⚡ ',''),T('Thwacking the horde fills the ⚡ meter. At full, press Q (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.'),false);
+  h+=almRow('⚡',T('⚡ Charge your ULTIMATE').replace('⚡ ',''),T('Thwacking the horde fills the ⚡ meter. At full, press Q or E (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.'),false);
   h+=almRow('🧬',T('🧬 Evolve your weapons').replace('🧬 ',''),T('Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.'),false);
   h+=almRow('🪙',T('🪙 Gold is forever').replace('🪙 ',''),T('Spend it in the LAWN SHOP on permanent upgrades. Greed pays for itself.'),false);
   h+=almRow('🚫',T('🚫 Banish & 🔒 Lock your picks').replace('🚫 ',''),T('On a level-up, ✖ banishes an option for the rest of the run; 🔒 holds one through a reroll. Keyboard X/C, gamepad Y/B.'),false);
@@ -3427,6 +3435,7 @@ function refreshKb(){
   document.querySelectorAll('.kb').forEach(b=>{
     b.textContent=kbCapture===b.dataset.slot?T('PRESS…'):kbName(SAVE.settings.keys[b.dataset.slot]);
   });
+  $('dashlab').textContent=T('DASH')+' ['+kbName(SAVE.settings.keys.dash)+']'; // HUD label follows the binding
 }
 document.querySelectorAll('.kb').forEach(b=>{
   b.onclick=()=>{kbCapture=b.dataset.slot;refreshKb();};
@@ -3480,7 +3489,11 @@ $('bBack1').onclick=()=>{pendingDaily=false;pendingChallenge=null;$('selNote').c
 $('bBack2').onclick=()=>{hideAll(['scrShop']);refreshMenu();show('scrMenu');G.state='menu';};
 $('bResume').onclick=togglePause;
 $('bMute').onclick=toggleMute;
-$('bQuit').onclick=()=>{bankGold();hideAll(['scrPause','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
+$('bQuit').onclick=async()=>{ // one mis-click must not end a 20-minute run
+  const ok=await gameModal({title:T('ABANDON LAWN'),text:T('This run will end. Your gold is banked.')});
+  if(!ok)return;
+  bankGold();hideAll(['scrPause','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
+$('bRestart').onclick=()=>{if(!P)return;bankGold();hideAll(['scrPause']);newRun(P.char.id);};
 $('bRetry').onclick=()=>{hideAll(['scrDead']);newRun(P.char.id);};
 $('bMenu1').onclick=()=>{hideAll(['scrDead','scrWin','scrPause','scrChest','scrLevel','hud']);refreshMenu();show('scrMenu');G.state='menu';P=null;clearWorld();};
 $('bGoOn').onclick=()=>{hideAll(['scrWin','scrDead']);if(!P)return;
@@ -3548,7 +3561,7 @@ Object.assign(ZH,{
   '💨 Dash through danger':'💨 冲刺穿越危险',
   'Dashing grants brief invincibility. Use it to pass through crowds and bullets.':'冲刺期间短暂无敌。用它穿过人群和弹幕。',
   '⚡ Charge your ULTIMATE':'⚡ 蓄力你的终极',
-  'Thwacking the horde fills the ⚡ meter. At full, press Q (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.':'拍飞敌群会蓄满 ⚡ 槽。蓄满后按 Q（手柄 Y，或 ⚡ 按钮）释放清屏冲击波。',
+  'Thwacking the horde fills the ⚡ meter. At full, press Q or E (gamepad Y, or the ⚡ button) to unleash a screen-clearing shockwave.':'拍飞敌群会蓄满 ⚡ 槽。蓄满后按 Q 或 E（手柄 Y，或 ⚡ 按钮）释放清屏冲击波。',
   '🧬 Evolve your weapons':'🧬 进化你的武器',
   'Max a weapon to Lv5, hold its paired passive at Lv2+, then open any chest. Elites and bosses drop chests.':'武器升到 5 级，搭配的被动达到 2 级以上，然后开任意宝箱。精英和头目会掉宝箱。',
   '🪙 Gold is forever':'🪙 金币是永久的',
@@ -3560,7 +3573,7 @@ Object.assign(ZH,{
   'THE CHASE':'追逐','long-haul trophies':'长线奖杯','endless +':'无尽 +','audited':'次审计',
   'NEXT:':'下一个：','bank 1,000 gold':'存满 1,000 金币','unlocks':'解锁',
   'GRADE':'评级','DPS':'秒伤','peak combo':'最高连击','NEW BEST!':'新纪录！',
-  'OVERFLOW':'溢出','stack':'层','Endless mastery — a permanent boost beyond max.':'无尽精通——突破上限的永久加成。',
+  'OVERFLOW':'溢出','stack':'层数','Endless mastery — a permanent boost beyond max.':'无尽精通——突破上限的永久加成。',
   'Damage':'伤害','Max HP':'最大生命','Speed':'移速','Crit':'暴击','Greed':'贪婪','Armor':'护甲','Regen':'回血',
   'Bruiser':'猛攻','Tank':'坦克','Rapid-Fire':'速射','Glass Cannon':'玻璃大炮','Hybrid':'全能',
   // v2.9 banish/lock
@@ -3573,25 +3586,25 @@ function applyLangHtml(){
   const set=(id,txt)=>{const el=$(id);if(el)el.textContent=txt;};
   ['bPlay','bDaily','bChal','bShop','bTrophies','bAlmanac','bSettings','bResume','bQuit','bRetry','bBack6',
    'bMenu1','bMenu2','bGoOn','bShare1','bShare2','bSnap1','bSnap2','bChestOk','bFull','modalOk','modalCancel',
-   'sExport','sImport','bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
+   'sExport','sImport','bWish','bWish2','bWish3','bRestart','bBack1','bBack2','bBack3','bBack4','bBack5'].forEach(id=>{
     const el=$(id);if(el)el.textContent=T(el.textContent.trim());});
   document.querySelectorAll('.setrow .sl').forEach(el=>{el.textContent=T(el.textContent.trim());});
   document.querySelectorAll('.screen h2.bigword').forEach(el=>{el.textContent=T(el.textContent.trim());});
   document.querySelectorAll('#scrLevel .small, #scrLevel div').forEach(el=>{
     if(el.textContent.trim()==='pick one — the lawn depends on it')el.textContent=T(el.textContent.trim());});
-  set('dashlab',T('DASH [SPACE]'));
   const tag=document.querySelector('#scrMenu .tag');
   if(tag)tag.textContent=T(tag.textContent.trim());
   const smalls=document.querySelectorAll('#scrMenu .small'); // flavor line + footer (keep footer in sync with the EN version string)
   if(smalls[0])smalls[0].textContent='武器会为你而战——你只需移动、冲刺、搭配 build。与其他"敲击系"游戏的任何相似之处纯属巧合，而且这种暗示真的很伤人。我们有腌黄瓜。还是 3D 的。';
-  if(smalls[1])smalls[1].textContent='v2.10 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
+  if(smalls[1])smalls[1].textContent='v2.11 · 可安装 · 支持离线 · 美术、音频、角色与代码全部原创 · three.js r158 (MIT) · 收集宝箱进化满级武器 · 12:00 卡伦驾到 · 撑过 15:00 将迎来审计';
   $('bMute').textContent=AU.muted?T('MUTE: ON'):T('MUTE: OFF');
   const ctl=$('ctlLine');
   if(ctl&&!document.body.classList.contains('touch'))
-    ctl.innerHTML='<kbd>WASD</kbd> 移动 · 🖱 视角（点击捕获） · <kbd>空格</kbd> 冲刺 · <b style="color:var(--lime)">武器自动开火</b> · 🎮 手柄 · 📱 触屏';
+    ctl.innerHTML='<kbd>WASD</kbd> 移动 · 🖱 视角（点击捕获） · <kbd>空格</kbd> 冲刺 · <kbd>Q</kbd> ⚡ 终极技 · <b style="color:var(--lime)">武器自动开火</b> · 🎮 手柄 · 📱 触屏';
   $('rotateHint').textContent='📱 旋转至横屏体验完整草坪';
 }
 applyLangHtml();
+refreshKb(); // boot-time: dash HUD label + keybind buttons reflect the saved bindings in either language
 let errShown=false;
 addEventListener('error',e=>{ // one-shot bug toast so players can report crashes
   if(errShown)return;errShown=true;

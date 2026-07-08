@@ -20,11 +20,11 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 
 ### Bosses & modes
 - **KAREN, FINAL FORM** at 12:00 — three phases, complaint barrages, HOA summons, manager-voice screams, teleports if you walk away
-- **5 bosses** total, plus **THE INSPECTOR**: an endless-mode audit that returns at 15:00, teleports when outrun, and respawns stronger
+- **5 bosses** total — three staged evictions, KAREN herself, and **THE INSPECTOR**: an endless-mode audit that returns at 15:00, teleports when outrun, and respawns stronger
 - **4 maps**, each with a **MOW+** hard mode unlocked by winning it — including PERPETUAL CARE, a restless cemetery
 - **THE GAUNTLET** — three challenge modes: GLASS LAWN (1 HP), ONE WEAPON WONDER, GNOME RUSH
 - **📅 Daily Run** — date-seeded so everyone fights the same waves; chase the thwack record and keep your streak
-- **16 achievements**, a discovery **Almanac**, a permanent meta **LAWN SHOP**, and a LAWN LEGEND crown at 100%
+- **19 achievements** (incl. a long-haul CHASE tier), a discovery **Almanac**, a permanent meta **LAWN SHOP**, and a LAWN LEGEND crown at 100%
 
 ### Tech & platforms
 - **One self-contained `index.html`, no build step** — installable PWA, plays fully offline after first load, no accounts, no ads
@@ -41,6 +41,8 @@ Runs in any modern browser — desktop, phone, or tablet. No install, no ads, no
 | Look | mouse (click to capture) or drag | right stick | right-half drag |
 | Zoom | scroll wheel | — | — |
 | Dash | Space / Shift | A / B | 💨 button |
+| ULTIMATE (when charged) | Q / E | Y | ⚡ button |
+| Banish / Lock (level-up) | X / C | Y / B | on-card buttons |
 | Pause | P / Esc | Start | ⏸ button |
 | Mute | M | — | settings |
 

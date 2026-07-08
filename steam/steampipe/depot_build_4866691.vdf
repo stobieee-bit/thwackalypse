@@ -1,0 +1,19 @@
+"DepotBuild"
+{
+	"DepotID" "4866691"
+
+	// take everything electron-builder produced (exe, resources/app.asar,
+	// app.asar.unpacked with the steamworks natives, locales, steam_appid.txt)
+	"FileMapping"
+	{
+		"LocalPath" "*"
+		"DepotPath" "."
+		"Recursive" "1"
+	}
+
+	// never ship build debris
+	"FileExclusion" "*.pdb"
+	"FileExclusion" "*.log"
+	// dev-only per Valve: the Steam client supplies the App ID for real installs
+	"FileExclusion" "steam_appid.txt"
+}

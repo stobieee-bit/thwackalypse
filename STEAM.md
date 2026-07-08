@@ -31,12 +31,25 @@ npm start            # play it
 npm run dist         # windows build  -> steam/dist/
 npm run dist:all     # windows + linux (AppImage; Deck runs via Proton anyway)
 ```
-Upload with SteamPipe (steamcmd + app_build script) or the Steamworks
-web uploader for small depots.
+Upload with SteamPipe — ready-made scripts live in `steam/steampipe/`:
+```
+# one-time: download steamcmd (https://developer.valvesoftware.com/wiki/SteamCMD)
+cd steam
+npm run dist                     # stages app/ + builds dist/win-unpacked/
+steamcmd +login <partner-account> ^
+  +run_app_build "%CD%\steampipe\app_build_4866690.vdf" +quit
+```
+Then in Steamworks: Builds → set the new build live on `default` (or `beta`).
+First, verify the depot ID on the SteamPipe > Depots page — the scripts assume
+the auto-created `4866691`; edit both VDFs if yours differs. Also configure
+**Installation > General > Launch Options**: executable `THWACKALYPSE 64.exe`,
+operating system Windows. (Or use the Steamworks web uploader for small depots.)
 
 ## 3. Achievements (dashboard setup)
-Create these 16 achievements in Steamworks > Stats & Achievements, using the
-**API Name** column (the shell calls `achievement.activate(ID.toUpperCase())`):
+Create these 19 achievements in Steamworks > Stats & Achievements, using the
+**API Name** column (the shell calls `achievement.activate(ID.toUpperCase())`).
+The game fires ALL of them through the bridge — any id missing from the
+dashboard fails silently, breaking platform parity for that trophy:
 
 | API Name    | In-game name        | Trigger                                |
 |-------------|---------------------|----------------------------------------|
@@ -56,6 +69,9 @@ Create these 16 achievements in Steamworks > Stats & Achievements, using the
 | GLASS       | Made of Porcelain   | Win GLASS LAWN (1 HP, no excuses)      |
 | SOLO        | This Is My Spatula  | Win ONE WEAPON WONDER                  |
 | RUSH        | Gnome Sayin'        | Win GNOME RUSH (6:00, gnomes only)     |
+| VETERAN     | Career Groundskeeper| 100,000 lifetime thwacks               |
+| CLEANSWEEP  | Full Coverage       | Win on every unlockable map            |
+| IRONLAWN    | Eternal Gardener    | Win MOW+ on PERPETUAL CARE             |
 
 Already-earned achievements re-fire on next unlock attempt only; for parity
 on first Steam boot, consider a one-time sync loop over `SAVE.ach` (left out
@@ -63,18 +79,26 @@ intentionally — decide whether legacy web progress should grant Steam
 achievements).
 
 ## 4. Steam Cloud
-The shell saves to `%APPDATA%/thwackalypse64/save.json` (Electron `userData`).
-In Steamworks > Cloud, enable **Auto-Cloud** with root `WinAppDataRoaming`,
-path `thwackalypse64`, pattern `save.json` (and the Linux equivalent root,
-`XDG_CONFIG_HOME`). No code changes required.
+The shell saves to `%APPDATA%\THWACKALYPSE 64\save.json` — Electron `userData`
+is named after `productName` ("THWACKALYPSE 64"), NOT the package name.
+In Steamworks > Cloud, enable **Auto-Cloud** with:
+- root `WinAppDataRoaming`, path `THWACKALYPSE 64`, pattern `save.json`
+- Linux: root `XDG_CONFIG_HOME`, path `THWACKALYPSE 64`, pattern `save.json`
+No code changes required. Sanity-check the path once by running the packaged
+build and confirming where save.json lands before enabling Auto-Cloud.
 
-## 5. Steam Deck
-- Gamepad: full support already (left stick move, right stick camera, A/B dash,
-  X reroll, Start pause, d-pad card navigation).
+## 5. Steam Deck / controller
+- In-run gamepad controls are complete: left stick move, right stick camera,
+  A/B dash, **Y ULTIMATE (in run)**, Start pause; level-up screen: d-pad
+  navigate, A pick, X reroll, **Y banish, B lock**; chest/death/win confirm on A.
+- **Menus (character select, shop, settings, almanac, trophies) are
+  mouse/touch-only** — on Deck they work via the touchscreen or a
+  trackpad-as-mouse controller config. Check **Partial Controller Support**
+  on the store page (not Full) until menu navigation is added.
 - Resolution: verified at 1280×800.
 - Emoji glyphs: bundled `twemoji.ttf` covers SteamOS (no system color emoji).
-- Submit for Deck review after launch; this profile is "Verified"-shaped
-  (no keyboard-required input, no launcher, legible text at 800p).
+- Deck review: expect "Playable" (touchscreen/trackpad needed for menus)
+  rather than "Verified" until menus are gamepad-navigable.
 
 ## 6. Leaderboards (Daily Run) — optional, recommended
 steamworks.js does not currently expose Steam leaderboards. Two options:
